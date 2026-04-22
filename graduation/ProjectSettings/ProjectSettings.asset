@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 26
-  productGUID: a6157153c363d954384c6b9a39cd9cbf
+  productGUID: 69043825a3f91c940acd26d849849b07
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -517,6 +517,13 @@ PlayerSettings:
       m_Height: 720
       m_Kind: 1
       m_SubKind: 
+  - m_BuildTarget: VisionOS
+    m_Icons:
+    - m_Textures: []
+      m_Width: 1024
+      m_Height: 1024
+      m_Kind: 0
+      m_SubKind: 
   m_BuildTargetBatching: []
   m_BuildTargetShaderSettings: []
   m_BuildTargetGraphicsJobs: []
@@ -920,11 +927,11 @@ PlayerSettings:
   apiCompatibilityLevel: 6
   activeInputHandler: 0
   windowsGamepadBackendHint: 0
-  cloudProjectId: e5124cb6-4f45-4547-b923-48cc439eec44
+  cloudProjectId: e7de38f1-be26-41a5-9365-ff14111f4e20
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: graduation 2026-03-22_15-10-55
-  organizationId: gggggggggggggggggggggggggggggg
+  projectName: graduation 2026-04-22_09-32-23
+  organizationId: kevin19941227
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

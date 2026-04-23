@@ -17,6 +17,7 @@ public class PlayerRuntimeData
     public bool isDead;
     public Vector3 currentPosition;
 
+    public List<StoredPartRuntimeData> storedParts = new List<StoredPartRuntimeData>();
     public List<EquippedPartRuntimeData> equippedParts = new List<EquippedPartRuntimeData>();
     public List<ActiveBuffRuntimeData> activeBuffs = new List<ActiveBuffRuntimeData>();
 }

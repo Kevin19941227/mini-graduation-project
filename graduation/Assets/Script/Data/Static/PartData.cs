@@ -36,4 +36,7 @@ public class PartData : ScriptableObject
     [Header("Presentation")]
     public Sprite icon;
     public GameObject partPrefab;
+
+    [Header("Inventory")]
+    public int maxStack = 99;
 }

@@ -8,7 +8,7 @@ public class MatchMapData
     public int[] cellMapIDs = new int[9];
 
     /// <summary>
-    /// 依據寬高初始化地圖資料。
+    /// 初始化地圖尺寸。
     /// </summary>
     public void Initialize(int newWidth, int newHeight)
     {
@@ -18,7 +18,7 @@ public class MatchMapData
     }
 
     /// <summary>
-    /// 取得指定格子的索引值。
+    /// 取得指定格子的陣列索引。
     /// </summary>
     public int GetIndex(int x, int y)
     {

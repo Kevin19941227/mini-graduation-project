@@ -20,6 +20,20 @@
 /graduation/**/BurstDebugInformation_DoNotShip/
 /graduation/**/NativeDataCache/
 /graduation/**/Bee/
+=========================
+Extra recommended ignores
+=========================
+*.userosscache
+*.sln.docstates
+*.cache
+*.bak
+*.orig
+*.diag
+
+ParrelSync clone folders (rename if your clone folder differs)
+Clone/
+Clones/
+_parrelsync/
 /graduation/**/Il2cppBuildCache/
 /graduation/**/ShaderCache/
 /graduation/**/PackageCache/

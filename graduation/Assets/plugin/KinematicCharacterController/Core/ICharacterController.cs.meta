@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<<< HEAD:graduation/Assets/Script/Data/PlayerStatCalculator.cs.meta
+guid: 647211f8c3a188e4a82a92ccbab43802
+========
+guid: f13aa252bd3bf9943b1d65e68d93dcfb
+>>>>>>>> test:graduation/Assets/plugin/KinematicCharacterController/Core/ICharacterController.cs.meta
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

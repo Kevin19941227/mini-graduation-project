@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+graduation/Assets/場景[[:space:]]2-1/* filter=lfs diff=lfs merge=lfs -text
+graduation/Assets/場景2-1.fbx filter=lfs diff=lfs merge=lfs -text

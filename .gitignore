@@ -127,3 +127,18 @@ TestResults/
 # *.bak
 # *.old
 # *.orig
+# Unity 產生的暫存資料夾 (絕對不要傳)
+/[Gg]raduation/[Ll]ibrary/
+/[Ss]cene 2/[Ll]ibrary/
+/[Gg]raduation/[Tt]emp/
+/[Ss]cene 2/[Tt]emp/
+/[Gg]raduation/[Oo]bj/
+/[Ss]cene 2/[Oo]bj/
+/[Gg]raduation/[Ll]ogs/
+/[Ss]cene 2/[Ll]ogs/
+
+# 程式碼產生的暫存檔
+*.csproj
+*.sln
+*.userprefs
+.vs/

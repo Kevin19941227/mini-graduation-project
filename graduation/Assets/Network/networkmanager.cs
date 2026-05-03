@@ -103,7 +103,7 @@ public class networkmanager : NetworkRoomManager
 
     #region 自動抓取 Transport
 
-    private void AutoAssignTransports()
+    private void AutoAssignTransports()//要優化時弄掉
     {
         foreach (Transport t in GetComponents<Transport>())
         {

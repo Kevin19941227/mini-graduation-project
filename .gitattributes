@@ -1,2 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+git lfs track "*.fbx"
+git lfs track "*.blend"
+git lfs track "*.psd"
+git lfs track "*.png"
+git lfs track "*.tga"
+git lfs track "*.wav"
+git lfs track "*.mp3"
+git lfs track "*.mp4"
+git lfs track "*.unitypackage"

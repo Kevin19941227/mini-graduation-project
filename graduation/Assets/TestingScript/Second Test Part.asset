@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87ed066da26318c40b2c972a62e2ceb1, type: 3}
+  m_Name: Second Test Part
+  m_EditorClassIdentifier: 
+  partID: 2
+  partName: 
+  partType: 0
+  rarity: 0
+  hpBonus: 13
+  attackBonus: 111
+  moveSpeedBonus: 111
+  defenseBonus: 111
+  attackSpeedBonus: 1111
+  icon: {fileID: 21300000, guid: 0cf7f547280c79842b199a68bc33c459, type: 3}
+  partPrefab: {fileID: 919132149155446097, guid: 44629b390244429448488e505c271f9c,
+    type: 3}
+  maxStack: 99

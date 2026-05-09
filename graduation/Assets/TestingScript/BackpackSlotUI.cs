@@ -3,7 +3,13 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class BackpackSlotUI : MonoBehaviour,
+    IPointerEnterHandler,
+    IPointerExitHandler,
+    IPointerMoveHandler,
+    IBeginDragHandler,
+    IDragHandler,
+    IEndDragHandler
 {
     #region References
 
@@ -19,8 +25,12 @@ public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     private PartData currentPartData;
 
     private System.Action<StoredPartRuntimeData, PartData> clickedCallback;
-    private System.Action<StoredPartRuntimeData, PartData> hoveredCallback;
+    private System.Action<StoredPartRuntimeData, PartData, Vector2> hoveredCallback;
+    private System.Action<Vector2> hoverMoveCallback;
     private System.Action hoverExitCallback;
+    private System.Action<StoredPartRuntimeData, PartData, Vector2> beginDragCallback;
+    private System.Action<Vector2> dragCallback;
+    private System.Action<Vector2> endDragCallback;
 
     #endregion
 
@@ -46,22 +56,27 @@ public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitH
 
     #region Public Methods
 
-    /// <summary>
-    /// 設定背包格顯示資料。
-    /// </summary>
     public void Set(
         StoredPartRuntimeData slotData,
         PartData partData,
         System.Action<StoredPartRuntimeData, PartData> onClicked,
-        System.Action<StoredPartRuntimeData, PartData> onHovered,
-        System.Action onHoverExit)
+        System.Action<StoredPartRuntimeData, PartData, Vector2> onHovered,
+        System.Action<Vector2> onHoverMove,
+        System.Action onHoverExit,
+        System.Action<StoredPartRuntimeData, PartData, Vector2> onBeginDrag,
+        System.Action<Vector2> onDrag,
+        System.Action<Vector2> onEndDrag)
     {
         currentSlotData = slotData;
         currentPartData = partData;
 
         clickedCallback = onClicked;
         hoveredCallback = onHovered;
+        hoverMoveCallback = onHoverMove;
         hoverExitCallback = onHoverExit;
+        beginDragCallback = onBeginDrag;
+        dragCallback = onDrag;
+        endDragCallback = onEndDrag;
 
         if (partData == null)
         {
@@ -86,9 +101,6 @@ public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitH
         }
     }
 
-    /// <summary>
-    /// 清空背包格。
-    /// </summary>
     public void Clear()
     {
         currentSlotData = default;
@@ -96,7 +108,11 @@ public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitH
 
         clickedCallback = null;
         hoveredCallback = null;
+        hoverMoveCallback = null;
         hoverExitCallback = null;
+        beginDragCallback = null;
+        dragCallback = null;
+        endDragCallback = null;
 
         if (iconImage != null)
         {
@@ -140,12 +156,52 @@ public class BackpackSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitH
             return;
         }
 
-        hoveredCallback?.Invoke(currentSlotData, currentPartData);
+        hoveredCallback?.Invoke(currentSlotData, currentPartData, eventData.position);
+    }
+
+    public void OnPointerMove(PointerEventData eventData)
+    {
+        if (currentPartData == null)
+        {
+            return;
+        }
+
+        hoverMoveCallback?.Invoke(eventData.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         hoverExitCallback?.Invoke();
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (currentPartData == null)
+        {
+            return;
+        }
+
+        beginDragCallback?.Invoke(currentSlotData, currentPartData, eventData.position);
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (currentPartData == null)
+        {
+            return;
+        }
+
+        dragCallback?.Invoke(eventData.position);
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (currentPartData == null)
+        {
+            return;
+        }
+
+        endDragCallback?.Invoke(eventData.position);
     }
 
     #endregion

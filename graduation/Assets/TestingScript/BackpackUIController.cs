@@ -10,17 +10,34 @@ public class BackpackUIController : MonoBehaviour
     [Header("Panel")]
     [SerializeField] private GameObject panelRoot;
 
+    [Header("Panel Runtime Style")]
+    [SerializeField] private bool applyRuntimePanelStyle = true;
+    [SerializeField] private bool fitSlotGridToPanel = true;
+    [SerializeField] private Vector2 slotGridPadding = new Vector2(16f, 16f);
+    [SerializeField] private Color panelBackgroundColor = new Color(0.08f, 0.10f, 0.12f, 0.88f);
+    [SerializeField] private Color panelShadowColor = new Color(0f, 0f, 0f, 0.45f);
+    [SerializeField] private Vector2 panelShadowDistance = new Vector2(6f, -6f);
+
     [Header("Slot UI")]
     [SerializeField] private Transform slotGridRoot;
     [SerializeField] private BackpackSlotUI slotPrefab;
 
     [Header("Detail UI")]
-    [SerializeField] private GameObject detailPanelRoot;
+    [SerializeField] private RectTransform detailPanelRoot;
     [SerializeField] private Image detailIconImage;
     [SerializeField] private TMP_Text detailNameText;
     [SerializeField] private TMP_Text detailStatText;
     [SerializeField] private Button equipButton;
 
+    [Header("Detail Position")]
+    [SerializeField] private RectTransform canvasRoot;
+    [SerializeField] private Vector2 detailOffset = new Vector2(20f, -20f);
+
+    [Header("Drag Install")]
+    [SerializeField] private Camera placementCamera;
+    [SerializeField] private LayerMask placementMask = ~0;
+    [SerializeField] private float placementRayDistance = 100f;
+    [SerializeField] private float fallbackPlacementDistance = 3f;
 
     [Header("Database")]
     [SerializeField] private GameDatabase gameDatabase;
@@ -32,7 +49,9 @@ public class BackpackUIController : MonoBehaviour
     private PlayerInventoryNetwork localInventory;
     private StoredPartRuntimeData selectedSlotData;
     private PartData selectedPartData;
+    private Vector2 lastPointerScreenPosition;
 
+    private GameObject dragPreviewInstance;
     private readonly List<BackpackSlotUI> slotUIs = new List<BackpackSlotUI>();
 
     #endregion
@@ -41,39 +60,39 @@ public class BackpackUIController : MonoBehaviour
 
     private void Awake()
     {
-        if (equipButton != null)
-        {
-            equipButton.onClick.AddListener(HandleEquipClicked);
-        }
-
-        ClearDetailPanel();
-        HideDetailPanel();
+        ApplyPanelRuntimeStyle();
+        DisableDetailPanel();
     }
 
     private void OnDestroy()
     {
-        if (equipButton != null)
-        {
-            equipButton.onClick.RemoveListener(HandleEquipClicked);
-        }
+        UnbindInventory();
+        ClearDragPreview();
     }
 
     #endregion
 
     #region Public Methods
 
-    /// <summary>
-    /// 綁定本地玩家背包。
-    /// </summary>
     public void Bind(PlayerInventoryNetwork inventory)
     {
+        if (localInventory == inventory)
+        {
+            RefreshUI();
+            return;
+        }
+
+        UnbindInventory();
         localInventory = inventory;
+
+        if (localInventory != null)
+        {
+            localInventory.OnInventoryChanged += RefreshUI;
+        }
+
         RefreshUI();
     }
 
-    /// <summary>
-    /// 顯示背包。
-    /// </summary>
     public void Show()
     {
         if (panelRoot != null)
@@ -84,9 +103,6 @@ public class BackpackUIController : MonoBehaviour
         RefreshUI();
     }
 
-    /// <summary>
-    /// 隱藏背包。
-    /// </summary>
     public void Hide()
     {
         if (panelRoot != null)
@@ -95,9 +111,6 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 切換背包顯示狀態。
-    /// </summary>
     public void Toggle()
     {
         if (panelRoot == null)
@@ -115,16 +128,43 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
+    public bool IsScreenPositionOverBackpack(Vector2 screenPosition)
+    {
+        if (panelRoot == null || !panelRoot.activeInHierarchy)
+        {
+            return false;
+        }
+
+        RectTransform panelRect = panelRoot.transform as RectTransform;
+
+        if (panelRect == null)
+        {
+            return false;
+        }
+
+        Canvas canvas = panelRoot.GetComponentInParent<Canvas>();
+        Camera uiCamera = null;
+
+        if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        {
+            uiCamera = canvas.worldCamera;
+        }
+
+        return RectTransformUtility.RectangleContainsScreenPoint(panelRect, screenPosition, uiCamera);
+    }
+
+    public bool IsBackpackOpen()
+    {
+        return panelRoot != null && panelRoot.activeInHierarchy;
+    }
+
     #endregion
 
     #region UI Refresh
 
-    /// <summary>
-    /// 刷新背包 UI。
-    /// </summary>
     public void RefreshUI()
     {
-        if (localInventory == null || gameDatabase == null)
+        if (localInventory == null || gameDatabase == null || slotPrefab == null || slotGridRoot == null)
         {
             return;
         }
@@ -155,7 +195,22 @@ public class BackpackUIController : MonoBehaviour
                 continue;
             }
 
-            slotUIs[i].Set(slotData,partData,HandleSlotClicked,HandleSlotHovered,HandleSlotHoverExit);
+            slotUIs[i].Set(
+                slotData,
+                partData,
+                HandleSlotClicked,
+                HandleSlotHovered,
+                HandleSlotMoved,
+                HandleSlotHoverExit,
+                HandleSlotBeginDrag,
+                HandleSlotDrag,
+                HandleSlotEndDrag
+            );
+        }
+
+        if (selectedPartData != null && !localInventory.ClientHasPart(selectedPartData.partID, 1))
+        {
+            ClearSelection();
         }
     }
 
@@ -170,14 +225,155 @@ public class BackpackUIController : MonoBehaviour
 
     #endregion
 
-    #region Detail Panel
+    #region Slot Events
 
     private void HandleSlotClicked(StoredPartRuntimeData slotData, PartData partData)
     {
+        SelectPart(slotData, partData);
+    }
+
+    private void HandleSlotHovered(StoredPartRuntimeData slotData, PartData partData, Vector2 screenPosition)
+    {
+        lastPointerScreenPosition = screenPosition;
+    }
+
+    private void HandleSlotMoved(Vector2 screenPosition)
+    {
+        lastPointerScreenPosition = screenPosition;
+    }
+
+    private void HandleSlotHoverExit()
+    {
+    }
+
+    private void HandleSlotBeginDrag(StoredPartRuntimeData slotData, PartData partData, Vector2 screenPosition)
+    {
+        lastPointerScreenPosition = screenPosition;
+        SelectPart(slotData, partData);
+        BeginDragPreview(partData, screenPosition);
+    }
+
+    private void HandleSlotDrag(Vector2 screenPosition)
+    {
+        lastPointerScreenPosition = screenPosition;
+        MoveDragPreview(screenPosition);
+    }
+
+    private void HandleSlotEndDrag(Vector2 screenPosition)
+    {
+        lastPointerScreenPosition = screenPosition;
+        FinishDragInstall(screenPosition);
+    }
+
+    private void SelectPart(StoredPartRuntimeData slotData, PartData partData)
+    {
         selectedSlotData = slotData;
         selectedPartData = partData;
+    }
 
-        RefreshDetailPanel();
+    #endregion
+
+    #region Panel Style
+
+    private void ApplyPanelRuntimeStyle()
+    {
+        if (panelRoot == null)
+        {
+            return;
+        }
+
+        FitSlotGridToPanel();
+
+        if (applyRuntimePanelStyle)
+        {
+            Image panelImage = panelRoot.GetComponent<Image>();
+
+            if (panelImage == null)
+            {
+                panelImage = panelRoot.AddComponent<Image>();
+            }
+
+            panelImage.color = panelBackgroundColor;
+            panelImage.raycastTarget = true;
+
+            Shadow panelShadow = panelRoot.GetComponent<Shadow>();
+
+            if (panelShadow == null)
+            {
+                panelShadow = panelRoot.AddComponent<Shadow>();
+            }
+
+            panelShadow.effectColor = panelShadowColor;
+            panelShadow.effectDistance = panelShadowDistance;
+            panelShadow.useGraphicAlpha = true;
+        }
+    }
+
+    private void FitSlotGridToPanel()
+    {
+        if (!fitSlotGridToPanel)
+        {
+            return;
+        }
+
+        RectTransform slotGridRect = slotGridRoot as RectTransform;
+
+        if (slotGridRect == null)
+        {
+            return;
+        }
+
+        slotGridRect.anchorMin = Vector2.zero;
+        slotGridRect.anchorMax = Vector2.one;
+        slotGridRect.pivot = new Vector2(0.5f, 0.5f);
+        slotGridRect.offsetMin = slotGridPadding;
+        slotGridRect.offsetMax = -slotGridPadding;
+        slotGridRect.localScale = Vector3.one;
+    }
+
+    #endregion
+
+    #region Detail Panel Disabled
+
+    private void DisableDetailPanel()
+    {
+        ClearSelection();
+
+        if (detailPanelRoot != null)
+        {
+            detailPanelRoot.gameObject.SetActive(false);
+        }
+
+        if (equipButton != null)
+        {
+            equipButton.interactable = false;
+        }
+    }
+
+    private void ClearSelection()
+    {
+        selectedSlotData = default;
+        selectedPartData = null;
+    }
+
+    #endregion
+
+    #region Detail Panel
+
+    private void ShowDetailPanel()
+    {
+        if (detailPanelRoot != null)
+        {
+            detailPanelRoot.gameObject.SetActive(true);
+        }
+    }
+
+    private void HideDetailPanel()
+    {
+        if (detailPanelRoot != null)
+        {
+            detailPanelRoot.gameObject.SetActive(false);
+        }
     }
 
     private void RefreshDetailPanel()
@@ -215,37 +411,6 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
-    private void HandleSlotHovered(StoredPartRuntimeData slotData, PartData partData)
-    {
-        selectedSlotData = slotData;
-        selectedPartData = partData;
-
-        ShowDetailPanel();
-        RefreshDetailPanel();
-    }
-
-    private void HandleSlotHoverExit()
-    {
-        ClearDetailPanel();
-        HideDetailPanel();
-    }
-
-    private void ShowDetailPanel()
-    {
-        if (detailPanelRoot != null)
-        {
-            detailPanelRoot.SetActive(true);
-        }
-    }
-
-    private void HideDetailPanel()
-    {
-        if (detailPanelRoot != null)
-        {
-            detailPanelRoot.SetActive(false);
-        }
-    }
-
     private void ClearDetailPanel()
     {
         selectedSlotData = default;
@@ -259,7 +424,7 @@ public class BackpackUIController : MonoBehaviour
 
         if (detailNameText != null)
         {
-            detailNameText.text = "未選擇部件";
+            detailNameText.text = "No part selected";
         }
 
         if (detailStatText != null)
@@ -273,21 +438,268 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
+    private void MoveDetailPanelToScreenPosition(Vector2 screenPosition)
+    {
+        if (detailPanelRoot == null)
+        {
+            return;
+        }
+
+        Canvas canvas = detailPanelRoot.GetComponentInParent<Canvas>();
+
+        if (canvas == null)
+        {
+            return;
+        }
+
+        RectTransform parentRect = detailPanelRoot.parent as RectTransform;
+
+        if (parentRect == null)
+        {
+            return;
+        }
+
+        Camera uiCamera = null;
+
+        if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        {
+            uiCamera = canvas.worldCamera;
+        }
+
+        Vector2 offsetScreenPosition = screenPosition + detailOffset;
+
+        bool hasWorldPoint = RectTransformUtility.ScreenPointToWorldPointInRectangle(
+            parentRect,
+            offsetScreenPosition,
+            uiCamera,
+            out Vector3 worldPoint
+        );
+
+        if (!hasWorldPoint)
+        {
+            return;
+        }
+
+        detailPanelRoot.position = worldPoint;
+    }
+
+    #endregion
+
+    #region Drag Install
+
+    private void BeginDragPreview(PartData partData, Vector2 screenPosition)
+    {
+        ClearDragPreview();
+
+        if (partData == null || partData.partPrefab == null)
+        {
+            return;
+        }
+
+        if (!TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
+        {
+            return;
+        }
+
+        dragPreviewInstance = Instantiate(partData.partPrefab, worldPosition, worldRotation);
+        dragPreviewInstance.name = partData.partPrefab.name + " Preview";
+        SetPreviewInteraction(dragPreviewInstance, false);
+    }
+
+    private void MoveDragPreview(Vector2 screenPosition)
+    {
+        if (dragPreviewInstance == null)
+        {
+            return;
+        }
+
+        if (!TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
+        {
+            return;
+        }
+
+        dragPreviewInstance.transform.SetPositionAndRotation(worldPosition, worldRotation);
+    }
+
+    private bool FinishDragInstall(Vector2 screenPosition)
+    {
+        MoveDragPreview(screenPosition);
+
+        PartData installedPartData = selectedPartData;
+
+        if (dragPreviewInstance == null)
+        {
+            return false;
+        }
+
+        if (!TryRequestInstallSelected())
+        {
+            ClearDragPreview();
+            return false;
+        }
+
+        dragPreviewInstance.name = installedPartData != null ? installedPartData.partName : dragPreviewInstance.name;
+        SetPreviewInteraction(dragPreviewInstance, true);
+        InitializePlacedPartDragHandler(dragPreviewInstance, installedPartData);
+        dragPreviewInstance = null;
+        return true;
+    }
+
+    private bool TryPlaceSelectedFromButton()
+    {
+        if (selectedPartData == null)
+        {
+            return false;
+        }
+
+        Vector2 screenPosition = lastPointerScreenPosition;
+
+        if (screenPosition == Vector2.zero)
+        {
+            screenPosition = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+        }
+
+        BeginDragPreview(selectedPartData, screenPosition);
+        return FinishDragInstall(screenPosition);
+    }
+
+    private bool TryGetPlacementPose(Vector2 screenPosition, out Vector3 worldPosition, out Quaternion worldRotation)
+    {
+        Camera cameraToUse = placementCamera != null ? placementCamera : Camera.main;
+
+        if (cameraToUse == null)
+        {
+            worldPosition = Vector3.zero;
+            worldRotation = Quaternion.identity;
+            return false;
+        }
+
+        Ray ray = cameraToUse.ScreenPointToRay(screenPosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, placementRayDistance, placementMask))
+        {
+            worldPosition = hit.point;
+            worldRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraToUse.transform.forward, hit.normal), hit.normal);
+            return true;
+        }
+
+        worldPosition = ray.GetPoint(fallbackPlacementDistance);
+        worldRotation = Quaternion.identity;
+        return true;
+    }
+
+    private bool TryRequestInstallSelected()
+    {
+        if (localInventory == null || selectedPartData == null || selectedSlotData.IsEmpty)
+        {
+            return false;
+        }
+
+        if (!localInventory.ClientHasPart(selectedPartData.partID, 1))
+        {
+            return false;
+        }
+
+        Vector3 installedPosition = dragPreviewInstance != null ? dragPreviewInstance.transform.localPosition : Vector3.zero;
+        Vector3 installedEulerAngles = dragPreviewInstance != null ? dragPreviewInstance.transform.localEulerAngles : Vector3.zero;
+        Vector3 installedScale = dragPreviewInstance != null ? dragPreviewInstance.transform.localScale : Vector3.one;
+
+        localInventory.CmdInstallPartFromBackpack(
+            selectedPartData.partID,
+            selectedPartData.partType.ToString(),
+            installedPosition,
+            installedEulerAngles,
+            installedScale
+        );
+
+        return true;
+    }
+
+    private void SetPreviewInteraction(GameObject target, bool enabled)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        Collider[] colliders = target.GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].enabled = enabled;
+        }
+
+        Rigidbody[] rigidbodies = target.GetComponentsInChildren<Rigidbody>();
+        for (int i = 0; i < rigidbodies.Length; i++)
+        {
+            rigidbodies[i].isKinematic = !enabled;
+        }
+    }
+
+    private void ClearDragPreview()
+    {
+        if (dragPreviewInstance == null)
+        {
+            return;
+        }
+
+        Destroy(dragPreviewInstance);
+        dragPreviewInstance = null;
+    }
+
+    private void InitializePlacedPartDragHandler(GameObject placedPart, PartData partData)
+    {
+        if (placedPart == null || partData == null || localInventory == null)
+        {
+            return;
+        }
+
+        PlacedPartDragHandler dragHandler = placedPart.GetComponent<PlacedPartDragHandler>();
+
+        if (dragHandler == null)
+        {
+            dragHandler = placedPart.AddComponent<PlacedPartDragHandler>();
+        }
+
+        dragHandler.Initialize(
+            partData.partID,
+            localInventory,
+            this,
+            placementCamera,
+            placementMask,
+            placementRayDistance,
+            fallbackPlacementDistance
+        );
+    }
+
     #endregion
 
     #region Button Events
 
     private void HandleEquipClicked()
     {
-        if (selectedPartData == null)
+        PartData installedPartData = selectedPartData;
+
+        if (!TryPlaceSelectedFromButton())
         {
             return;
         }
 
-        Debug.Log($"[BackpackUI] 點擊裝備部件：{selectedPartData.partName}, PartID: {selectedPartData.partID}");
+        Debug.Log($"[BackpackUI] Installed part: {installedPartData.partName}, PartID: {installedPartData.partID}");
+    }
 
-        // 初版先只測試 UI 點擊是否正常。
-        // 下一階段再接 PlayerEquipmentController / Mirror Command / Server 裝備同步。
+    #endregion
+
+    #region Inventory Binding
+
+    private void UnbindInventory()
+    {
+        if (localInventory == null)
+        {
+            return;
+        }
+
+        localInventory.OnInventoryChanged -= RefreshUI;
+        localInventory = null;
     }
 
     #endregion

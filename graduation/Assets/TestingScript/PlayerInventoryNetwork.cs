@@ -1,5 +1,6 @@
 using System;
 using Mirror;
+using UnityEngine;
 
 public class PlayerInventoryNetwork : NetworkBehaviour
 {
@@ -18,9 +19,6 @@ public class PlayerInventoryNetwork : NetworkBehaviour
 
     #region Mirror Callbacks
 
-    /// <summary>
-    /// Client 端初始化背包同步事件。
-    /// </summary>
     public override void OnStartClient()
     {
         base.OnStartClient();
@@ -31,9 +29,6 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         OnInventoryChanged?.Invoke();
     }
 
-    /// <summary>
-    /// Client 端停止時取消背包同步事件。
-    /// </summary>
     public override void OnStopClient()
     {
         StoredParts.Callback -= HandleStoredPartsChanged;
@@ -44,11 +39,49 @@ public class PlayerInventoryNetwork : NetworkBehaviour
 
     #endregion
 
+    #region Client Helpers
+
+    public bool ClientHasPart(int partID, int count)
+    {
+        if (partID <= 0 || count <= 0)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < StoredParts.Count; i++)
+        {
+            StoredPartRuntimeData slot = StoredParts[i];
+
+            if (slot.partID == partID && slot.count >= count)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    [Command]
+    public void CmdInstallPartFromBackpack(
+        int partID,
+        string attachPointID,
+        Vector3 localPosition,
+        Vector3 localEulerAngles,
+        Vector3 localScale)
+    {
+        ServerInstallPartFromBackpack(partID, attachPointID, localPosition, localEulerAngles, localScale);
+    }
+
+    [Command]
+    public void CmdReturnInstalledPartToBackpack(int partID)
+    {
+        ServerReturnInstalledPartToBackpack(partID);
+    }
+
+    #endregion
+
     #region Server Methods
 
-    /// <summary>
-    /// Server 將部件加入玩家背包。
-    /// </summary>
     [Server]
     public bool ServerAddPart(int partID, int count)
     {
@@ -81,9 +114,6 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Server 從玩家背包移除部件。
-    /// </summary>
     [Server]
     public bool ServerRemovePart(int partID, int count)
     {
@@ -124,9 +154,6 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         return false;
     }
 
-    /// <summary>
-    /// Server 檢查玩家是否持有指定部件。
-    /// </summary>
     [Server]
     public bool ServerHasPart(int partID, int count)
     {
@@ -146,6 +173,53 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         }
 
         return false;
+    }
+
+    [Server]
+    public bool ServerInstallPartFromBackpack(
+        int partID,
+        string attachPointID,
+        Vector3 localPosition,
+        Vector3 localEulerAngles,
+        Vector3 localScale)
+    {
+        if (!ServerRemovePart(partID, 1))
+        {
+            return false;
+        }
+
+        EquippedPartRuntimeData equippedPart = new EquippedPartRuntimeData(
+            EquippedParts.Count,
+            partID,
+            attachPointID,
+            localPosition,
+            localEulerAngles,
+            localScale
+        );
+
+        EquippedParts.Add(equippedPart);
+        return true;
+    }
+
+    [Server]
+    public bool ServerReturnInstalledPartToBackpack(int partID)
+    {
+        if (partID <= 0)
+        {
+            return false;
+        }
+
+        int equippedIndex = FindEquippedPartIndex(partID);
+
+        if (equippedIndex < 0)
+        {
+            return false;
+        }
+
+        EquippedParts.RemoveAt(equippedIndex);
+        RebuildEquippedIndexes();
+        ServerAddPart(partID, 1);
+        return true;
     }
 
     #endregion
@@ -174,9 +248,6 @@ public class PlayerInventoryNetwork : NetworkBehaviour
 
     #region Internal Methods
 
-    /// <summary>
-    /// 重新整理背包格索引。
-    /// </summary>
     [Server]
     private void RebuildSlotIndexes()
     {
@@ -185,6 +256,31 @@ public class PlayerInventoryNetwork : NetworkBehaviour
             StoredPartRuntimeData slot = StoredParts[i];
             slot.slotIndex = i;
             StoredParts[i] = slot;
+        }
+    }
+
+    [Server]
+    private int FindEquippedPartIndex(int partID)
+    {
+        for (int i = 0; i < EquippedParts.Count; i++)
+        {
+            if (EquippedParts[i].partID == partID)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    [Server]
+    private void RebuildEquippedIndexes()
+    {
+        for (int i = 0; i < EquippedParts.Count; i++)
+        {
+            EquippedPartRuntimeData equippedPart = EquippedParts[i];
+            equippedPart.equipIndex = i;
+            EquippedParts[i] = equippedPart;
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum PartType
@@ -26,12 +27,18 @@ public class PartData : ScriptableObject
     public PartType partType;
     public RarityType rarity;
 
-    [Header("Stat Bonus")]
+    [Header("Stat Modifiers")]
+    public List<StatModifier> statModifiers = new List<StatModifier>();
+
+    [Header("Legacy Stat Bonus")]
     public int hpBonus;
     public int attackBonus;
     public float moveSpeedBonus;
     public int defenseBonus;
     public float attackSpeedBonus;
+
+    [Header("Passive Effects")]
+    public List<BuffData> passiveBuffs = new List<BuffData>();
 
     [Header("Presentation")]
     public Sprite icon;
@@ -39,4 +46,48 @@ public class PartData : ScriptableObject
 
     [Header("Inventory")]
     public int maxStack = 99;
+
+    public void AppendStatModifiers(List<StatModifier> target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        if (statModifiers != null && statModifiers.Count > 0)
+        {
+            target.AddRange(statModifiers);
+            return;
+        }
+
+        AppendLegacyStatModifiers(target);
+    }
+
+    private void AppendLegacyStatModifiers(List<StatModifier> target)
+    {
+        if (hpBonus != 0)
+        {
+            target.Add(new StatModifier(StatType.MaxHP, hpBonus));
+        }
+
+        if (attackBonus != 0)
+        {
+            target.Add(new StatModifier(StatType.Attack, attackBonus));
+        }
+
+        if (!Mathf.Approximately(moveSpeedBonus, 0f))
+        {
+            target.Add(new StatModifier(StatType.MoveSpeed, moveSpeedBonus));
+        }
+
+        if (defenseBonus != 0)
+        {
+            target.Add(new StatModifier(StatType.Defense, defenseBonus));
+        }
+
+        if (!Mathf.Approximately(attackSpeedBonus, 0f))
+        {
+            target.Add(new StatModifier(StatType.AttackSpeed, attackSpeedBonus));
+        }
+    }
 }

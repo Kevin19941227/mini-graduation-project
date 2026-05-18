@@ -1,3 +1,5 @@
+Even if Codex is launched with full access, treat this project as workspace-limited.
+Do not read, write, delete, move, or inspect files outside this repository unless I explicitly request it in the current chat.
 # Codex Rules for this Unity Project
 
 This is a Unity project. Keep changes small and safe.

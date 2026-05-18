@@ -22,6 +22,6 @@ MonoBehaviour:
   defenseBonus: 111
   attackSpeedBonus: 1111
   icon: {fileID: 21300000, guid: 0cf7f547280c79842b199a68bc33c459, type: 3}
-  partPrefab: {fileID: 919132149155446097, guid: 44629b390244429448488e505c271f9c,
+  partPrefab: {fileID: 5859447823054147252, guid: 47592af16dbb21442b7749d001efdfcc,
     type: 3}
   maxStack: 99

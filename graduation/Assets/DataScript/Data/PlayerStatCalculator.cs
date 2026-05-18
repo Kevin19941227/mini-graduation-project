@@ -3,8 +3,10 @@ using UnityEngine;
 
 public static class PlayerStatCalculator
 {
+    private static readonly List<StatModifier> ModifierBuffer = new List<StatModifier>();
+
     /// <summary>
-    /// 根據基礎資料、部件與 Buff 計算玩家當前數值。
+    /// Calculates the current player stats from base data, equipped parts, and active buffs.
     /// </summary>
     public static void RecalculatePlayerStats(
         PlayerBaseData baseData,
@@ -25,46 +27,31 @@ public static class PlayerStatCalculator
         float finalAttackSpeed = baseData.baseAttackSpeed;
 
         #region Parts Bonus
-        for (int i = 0; i < equippedPartDataList.Count; i++)
+        if (equippedPartDataList != null)
         {
-            PartData part = equippedPartDataList[i];
-            if (part == null) continue;
+            for (int i = 0; i < equippedPartDataList.Count; i++)
+            {
+                PartData part = equippedPartDataList[i];
+                if (part == null) continue;
 
-            finalHP += part.hpBonus;
-            finalAttack += part.attackBonus;
-            finalMoveSpeed += part.moveSpeedBonus;
-            finalDefense += part.defenseBonus;
-            finalAttackSpeed += part.attackSpeedBonus;
+                ModifierBuffer.Clear();
+                part.AppendStatModifiers(ModifierBuffer);
+                ApplyModifiers(ModifierBuffer, ref finalHP, ref finalAttack, ref finalMoveSpeed, ref finalDefense, ref finalAttackSpeed);
+            }
         }
         #endregion
 
         #region Buff Bonus
-        for (int i = 0; i < activeBuffDataList.Count; i++)
+        if (activeBuffDataList != null)
         {
-            BuffData buff = activeBuffDataList[i];
-            if (buff == null) continue;
-
-            switch (buff.buffType)
+            for (int i = 0; i < activeBuffDataList.Count; i++)
             {
-                case BuffType.SpeedUp:
-                    finalMoveSpeed += buff.value;
-                    break;
+                BuffData buff = activeBuffDataList[i];
+                if (buff == null) continue;
 
-                case BuffType.DefenseUp:
-                    finalDefense += Mathf.RoundToInt(buff.value);
-                    break;
-
-                case BuffType.AttackUp:
-                    finalAttack += Mathf.RoundToInt(buff.value);
-                    break;
-
-                case BuffType.Slow:
-                    finalMoveSpeed -= buff.value;
-                    break;
-
-                case BuffType.Poison:
-                    // 毒通常不直接加在靜態數值，可能另外在Tick系統處理
-                    break;
+                ModifierBuffer.Clear();
+                buff.AppendStatModifiers(ModifierBuffer);
+                ApplyModifiers(ModifierBuffer, ref finalHP, ref finalAttack, ref finalMoveSpeed, ref finalDefense, ref finalAttackSpeed);
             }
         }
         #endregion
@@ -77,6 +64,58 @@ public static class PlayerStatCalculator
         if (runtimeData.currentHP > finalHP)
         {
             runtimeData.currentHP = finalHP;
+        }
+    }
+
+    private static void ApplyModifiers(
+        List<StatModifier> modifiers,
+        ref int finalHP,
+        ref int finalAttack,
+        ref float finalMoveSpeed,
+        ref int finalDefense,
+        ref float finalAttackSpeed)
+    {
+        for (int i = 0; i < modifiers.Count; i++)
+        {
+            StatModifier modifier = modifiers[i];
+
+            switch (modifier.statType)
+            {
+                case StatType.MaxHP:
+                    finalHP = Mathf.RoundToInt(ApplyModifier(finalHP, modifier));
+                    break;
+
+                case StatType.Attack:
+                    finalAttack = Mathf.RoundToInt(ApplyModifier(finalAttack, modifier));
+                    break;
+
+                case StatType.MoveSpeed:
+                    finalMoveSpeed = ApplyModifier(finalMoveSpeed, modifier);
+                    break;
+
+                case StatType.Defense:
+                    finalDefense = Mathf.RoundToInt(ApplyModifier(finalDefense, modifier));
+                    break;
+
+                case StatType.AttackSpeed:
+                    finalAttackSpeed = ApplyModifier(finalAttackSpeed, modifier);
+                    break;
+            }
+        }
+    }
+
+    private static float ApplyModifier(float currentValue, StatModifier modifier)
+    {
+        switch (modifier.mode)
+        {
+            case StatModifierMode.PercentAdd:
+                return currentValue + currentValue * modifier.value * 0.01f;
+
+            case StatModifierMode.PercentMultiply:
+                return currentValue * (1f + modifier.value * 0.01f);
+
+            default:
+                return currentValue + modifier.value;
         }
     }
 }

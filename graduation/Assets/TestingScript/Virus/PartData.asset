@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87ed066da26318c40b2c972a62e2ceb1, type: 3}
+  m_Name: PartData
+  m_EditorClassIdentifier: 
+  partID: 101
+  partName: VirusHead
+  partType: 0
+  rarity: 0
+  hpBonus: 0
+  attackBonus: 10
+  moveSpeedBonus: 0
+  defenseBonus: 0
+  attackSpeedBonus: 0
+  passiveBuffs: []
+  icon: {fileID: 0}
+  partPrefab: {fileID: 5859447823054147252, guid: 47592af16dbb21442b7749d001efdfcc,
+    type: 3}
+  maxStack: 99

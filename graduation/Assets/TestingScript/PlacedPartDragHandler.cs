@@ -9,6 +9,8 @@ public class PlacedPartDragHandler : MonoBehaviour
     private LayerMask placementMask;
     private float placementRayDistance;
     private float fallbackPlacementDistance;
+    private float placementRotationSpeed;
+    private float dragYawOffset;
     private bool isInitialized;
     private bool isDragging;
 
@@ -19,7 +21,8 @@ public class PlacedPartDragHandler : MonoBehaviour
         Camera initializedPlacementCamera,
         LayerMask initializedPlacementMask,
         float initializedPlacementRayDistance,
-        float initializedFallbackPlacementDistance)
+        float initializedFallbackPlacementDistance,
+        float initializedPlacementRotationSpeed)
     {
         partID = initializedPartID;
         inventory = initializedInventory;
@@ -28,6 +31,7 @@ public class PlacedPartDragHandler : MonoBehaviour
         placementMask = initializedPlacementMask;
         placementRayDistance = initializedPlacementRayDistance;
         fallbackPlacementDistance = initializedFallbackPlacementDistance;
+        placementRotationSpeed = initializedPlacementRotationSpeed;
         isInitialized = partID > 0 && inventory != null && backpackUIController != null;
 
         EnsureDragCollider();
@@ -41,6 +45,7 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         isDragging = true;
+        dragYawOffset = transform.eulerAngles.y;
     }
 
     private void OnMouseDrag()
@@ -55,6 +60,8 @@ public class PlacedPartDragHandler : MonoBehaviour
             isDragging = false;
             return;
         }
+
+        UpdateRotationInput();
 
         if (TryGetPlacementPose(Input.mousePosition, out Vector3 worldPosition, out Quaternion worldRotation))
         {
@@ -96,13 +103,53 @@ public class PlacedPartDragHandler : MonoBehaviour
         if (TryRaycastPlacement(ray, out RaycastHit hit))
         {
             worldPosition = hit.point;
-            worldRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraToUse.transform.forward, hit.normal), hit.normal);
+            worldRotation = BuildPlacementRotation(cameraToUse.transform.forward, hit.normal);
             return true;
         }
 
         worldPosition = ray.GetPoint(fallbackPlacementDistance);
-        worldRotation = transform.rotation;
+        worldRotation = Quaternion.Euler(0f, dragYawOffset, 0f);
         return true;
+    }
+
+    private void UpdateRotationInput()
+    {
+        float direction = 0f;
+
+        if (Input.GetKey(KeyCode.Q))
+        {
+            direction -= 1f;
+        }
+
+        if (Input.GetKey(KeyCode.E))
+        {
+            direction += 1f;
+        }
+
+        float scroll = Input.mouseScrollDelta.y;
+        if (!Mathf.Approximately(scroll, 0f))
+        {
+            direction += scroll;
+        }
+
+        if (!Mathf.Approximately(direction, 0f))
+        {
+            dragYawOffset += direction * placementRotationSpeed * Time.deltaTime;
+        }
+    }
+
+    private Quaternion BuildPlacementRotation(Vector3 cameraForward, Vector3 surfaceNormal)
+    {
+        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
+
+        if (forwardOnSurface.sqrMagnitude < 0.0001f)
+        {
+            forwardOnSurface = Vector3.ProjectOnPlane(Vector3.forward, surfaceNormal);
+        }
+
+        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
+        Quaternion yawRotation = Quaternion.AngleAxis(dragYawOffset, surfaceNormal);
+        return yawRotation * surfaceRotation;
     }
 
     private void EnsureDragCollider()

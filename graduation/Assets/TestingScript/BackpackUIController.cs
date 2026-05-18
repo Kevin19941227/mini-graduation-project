@@ -38,6 +38,7 @@ public class BackpackUIController : MonoBehaviour
     [SerializeField] private LayerMask placementMask = ~0;
     [SerializeField] private float placementRayDistance = 100f;
     [SerializeField] private float fallbackPlacementDistance = 3f;
+    [SerializeField] private float placementRotationSpeed = 120f;
 
     [Header("Database")]
     [SerializeField] private GameDatabase gameDatabase;
@@ -52,6 +53,7 @@ public class BackpackUIController : MonoBehaviour
     private Vector2 lastPointerScreenPosition;
 
     private GameObject dragPreviewInstance;
+    private float dragPreviewYawOffset;
     private readonly List<BackpackSlotUI> slotUIs = new List<BackpackSlotUI>();
 
     #endregion
@@ -62,6 +64,14 @@ public class BackpackUIController : MonoBehaviour
     {
         ApplyPanelRuntimeStyle();
         DisableDetailPanel();
+    }
+
+    private void LateUpdate()
+    {
+        if (IsBackpackOpen())
+        {
+            UnlockCursorForBackpack();
+        }
     }
 
     private void OnDestroy()
@@ -100,6 +110,8 @@ public class BackpackUIController : MonoBehaviour
             panelRoot.SetActive(true);
         }
 
+        UnlockCursorForBackpack();
+        SwitchToAssemblyCamera();
         RefreshUI();
     }
 
@@ -109,6 +121,9 @@ public class BackpackUIController : MonoBehaviour
         {
             panelRoot.SetActive(false);
         }
+
+        ClearDragPreview();
+        SwitchToGameplayCamera();
     }
 
     public void Toggle()
@@ -156,6 +171,11 @@ public class BackpackUIController : MonoBehaviour
     public bool IsBackpackOpen()
     {
         return panelRoot != null && panelRoot.activeInHierarchy;
+    }
+
+    public bool IsDraggingInstallPreview()
+    {
+        return dragPreviewInstance != null;
     }
 
     #endregion
@@ -397,12 +417,7 @@ public class BackpackUIController : MonoBehaviour
 
         if (detailStatText != null)
         {
-            detailStatText.text =
-                $"HP +{selectedPartData.hpBonus}\n" +
-                $"Attack +{selectedPartData.attackBonus}\n" +
-                $"Move Speed +{selectedPartData.moveSpeedBonus}\n" +
-                $"Defense +{selectedPartData.defenseBonus}\n" +
-                $"Attack Speed +{selectedPartData.attackSpeedBonus}";
+            detailStatText.text = BuildStatText(selectedPartData);
         }
 
         if (equipButton != null)
@@ -483,6 +498,35 @@ public class BackpackUIController : MonoBehaviour
         detailPanelRoot.position = worldPoint;
     }
 
+    private string BuildStatText(PartData partData)
+    {
+        if (partData == null)
+        {
+            return string.Empty;
+        }
+
+        List<StatModifier> modifiers = new List<StatModifier>();
+        partData.AppendStatModifiers(modifiers);
+
+        if (modifiers.Count == 0)
+        {
+            return "No stat bonus";
+        }
+
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+        for (int i = 0; i < modifiers.Count; i++)
+        {
+            if (i > 0)
+            {
+                builder.AppendLine();
+            }
+
+            builder.Append(modifiers[i].GetDisplayText());
+        }
+
+        return builder.ToString();
+    }
+
     #endregion
 
     #region Drag Install
@@ -501,6 +545,7 @@ public class BackpackUIController : MonoBehaviour
             return;
         }
 
+        dragPreviewYawOffset = 0f;
         dragPreviewInstance = Instantiate(partData.partPrefab, worldPosition, worldRotation);
         dragPreviewInstance.name = partData.partPrefab.name + " Preview";
         SetPreviewInteraction(dragPreviewInstance, false);
@@ -512,6 +557,8 @@ public class BackpackUIController : MonoBehaviour
         {
             return;
         }
+
+        UpdateDragPreviewRotationInput();
 
         if (!TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
         {
@@ -579,13 +626,27 @@ public class BackpackUIController : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, placementRayDistance, placementMask))
         {
             worldPosition = hit.point;
-            worldRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(cameraToUse.transform.forward, hit.normal), hit.normal);
+            worldRotation = BuildPlacementRotation(cameraToUse.transform.forward, hit.normal);
             return true;
         }
 
         worldPosition = ray.GetPoint(fallbackPlacementDistance);
-        worldRotation = Quaternion.identity;
+        worldRotation = Quaternion.Euler(0f, dragPreviewYawOffset, 0f);
         return true;
+    }
+
+    private Quaternion BuildPlacementRotation(Vector3 cameraForward, Vector3 surfaceNormal)
+    {
+        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
+
+        if (forwardOnSurface.sqrMagnitude < 0.0001f)
+        {
+            forwardOnSurface = Vector3.ProjectOnPlane(Vector3.forward, surfaceNormal);
+        }
+
+        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
+        Quaternion yawRotation = Quaternion.AngleAxis(dragPreviewYawOffset, surfaceNormal);
+        return yawRotation * surfaceRotation;
     }
 
     private bool TryRequestInstallSelected()
@@ -667,7 +728,8 @@ public class BackpackUIController : MonoBehaviour
             placementCamera,
             placementMask,
             placementRayDistance,
-            fallbackPlacementDistance
+            fallbackPlacementDistance,
+            placementRotationSpeed
         );
     }
 
@@ -700,6 +762,54 @@ public class BackpackUIController : MonoBehaviour
 
         localInventory.OnInventoryChanged -= RefreshUI;
         localInventory = null;
+    }
+
+    private void UpdateDragPreviewRotationInput()
+    {
+        float direction = 0f;
+
+        if (Input.GetKey(KeyCode.Q))
+        {
+            direction -= 1f;
+        }
+
+        if (Input.GetKey(KeyCode.E))
+        {
+            direction += 1f;
+        }
+
+        float scroll = Input.mouseScrollDelta.y;
+        if (!Mathf.Approximately(scroll, 0f))
+        {
+            direction += scroll;
+        }
+
+        if (!Mathf.Approximately(direction, 0f))
+        {
+            dragPreviewYawOffset += direction * placementRotationSpeed * Time.deltaTime;
+        }
+    }
+
+    private void UnlockCursorForBackpack()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void SwitchToAssemblyCamera()
+    {
+        if (PlayerCameraManager.HasInstance)
+        {
+            PlayerCameraManager.Instance.SwitchToAssemblyCamera();
+        }
+    }
+
+    private void SwitchToGameplayCamera()
+    {
+        if (PlayerCameraManager.HasInstance)
+        {
+            PlayerCameraManager.Instance.SwitchToGameplayCamera();
+        }
     }
 
     #endregion

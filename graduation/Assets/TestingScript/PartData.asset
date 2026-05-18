@@ -16,12 +16,17 @@ MonoBehaviour:
   partName: First Test Part
   partType: 2
   rarity: 0
+  statModifiers:
+  - statType: 0
+    mode: 0
+    value: 0
   hpBonus: 10
   attackBonus: 10
   moveSpeedBonus: 10
   defenseBonus: 10
   attackSpeedBonus: 10
+  passiveBuffs: []
   icon: {fileID: 21300000, guid: 374bb7996109088448bf72cbf8bf4dae, type: 3}
-  partPrefab: {fileID: 919132149155446097, guid: 7e262b93cb9bbf34b84795006f9cb675,
+  partPrefab: {fileID: 6251391776136720639, guid: 6c60a0dfff30c1b48bc438afa2014a69,
     type: 3}
   maxStack: 99

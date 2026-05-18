@@ -1,9 +1,5 @@
 fileFormatVersion: 2
-<<<<<<<< HEAD:graduation/Assets/Script/Data/PlayerStatCalculator.cs.meta
-guid: f23c2c45bdf64814993199507bdf3b6e
-========
-guid: f13aa252bd3bf9943b1d65e68d93dcfb
->>>>>>>> test:graduation/Assets/plugin/KinematicCharacterController/Core/ICharacterController.cs.meta
+guid: 8553b977fcb9cff4bb27d7784c0564d6
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2

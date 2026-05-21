@@ -99,6 +99,24 @@ desktop.ini
 coverage/
 TestResults/
 
+# =========================================================
+# Large 3D & Media Files (GitHub Size Limits)
+# 阻絕超過 100MB 的大檔案，確保畢業製作順利同步
+# =========================================================
+*.fbx
+*.obj
+*.blend
+*.max
+*.ma
+*.mb
+*.psd
+*.tif
+*.tiff
+*.mp4
+*.mov
+*.wav
+*.mp3
+
 # =========================
 # Optional ignores
 # Uncomment if needed

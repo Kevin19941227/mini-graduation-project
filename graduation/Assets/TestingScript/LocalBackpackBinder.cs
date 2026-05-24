@@ -13,6 +13,7 @@ public class LocalBackpackBinder : MonoBehaviour
 
     private bool isBound;
     private NetworkIdentity boundLocalPlayer;
+    private NetworkIdentity lastObservedLocalPlayer;
 
     #endregion
 
@@ -20,15 +21,15 @@ public class LocalBackpackBinder : MonoBehaviour
 
     private void Update()
     {
-        TryBindLocalPlayer();
+        NetworkIdentity localPlayer = NetworkClient.localPlayer;
 
-        if (Input.GetKeyDown(KeyCode.B))
+        if (lastObservedLocalPlayer == localPlayer)
         {
-            if (backpackUIController != null)
-            {
-                backpackUIController.Toggle();
-            }
+            return;
         }
+
+        lastObservedLocalPlayer = localPlayer;
+        TryBindLocalPlayer(localPlayer);
     }
 
     #endregion
@@ -38,10 +39,8 @@ public class LocalBackpackBinder : MonoBehaviour
     /// <summary>
     /// 嘗試綁定本地玩家背包。
     /// </summary>
-    private void TryBindLocalPlayer()
+    private void TryBindLocalPlayer(NetworkIdentity localPlayer)
     {
-        NetworkIdentity localPlayer = NetworkClient.localPlayer;
-
         if (localPlayer == null)
         {
             ClearBinding();
@@ -67,6 +66,15 @@ public class LocalBackpackBinder : MonoBehaviour
         }
 
         backpackUIController.Bind(inventory);
+
+        PlayerControlModeController controlModeController =
+            localPlayer.GetComponent<PlayerControlModeController>();
+
+        if (controlModeController != null)
+        {
+            controlModeController.SetBackpackUIController(backpackUIController);
+        }
+
         boundLocalPlayer = localPlayer;
         isBound = true;
     }
@@ -84,6 +92,7 @@ public class LocalBackpackBinder : MonoBehaviour
         }
 
         boundLocalPlayer = null;
+        lastObservedLocalPlayer = null;
         isBound = false;
     }
     #endregion

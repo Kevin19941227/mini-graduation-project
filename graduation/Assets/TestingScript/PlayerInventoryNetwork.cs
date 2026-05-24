@@ -78,6 +78,12 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         ServerReturnInstalledPartToBackpack(partID);
     }
 
+    [Command]
+    public void CmdReturnAllInstalledPartsToBackpack()
+    {
+        ServerReturnAllInstalledPartsToBackpack();
+    }
+
     #endregion
 
     #region Server Methods
@@ -220,6 +226,29 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         RebuildEquippedIndexes();
         ServerAddPart(partID, 1);
         return true;
+    }
+
+    [Server]
+    public int ServerReturnAllInstalledPartsToBackpack()
+    {
+        int returnedCount = 0;
+
+        for (int i = EquippedParts.Count - 1; i >= 0; i--)
+        {
+            int partID = EquippedParts[i].partID;
+
+            if (partID <= 0)
+            {
+                continue;
+            }
+
+            EquippedParts.RemoveAt(i);
+            ServerAddPart(partID, 1);
+            returnedCount++;
+        }
+
+        RebuildEquippedIndexes();
+        return returnedCount;
     }
 
     #endregion

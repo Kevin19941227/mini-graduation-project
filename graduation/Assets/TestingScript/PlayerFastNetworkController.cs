@@ -2,7 +2,7 @@ using System;
 using Mirror;
 using UnityEngine;
 
-public class PlayerFastNetworkController : NetworkBehaviour
+public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeReceiver
 {
     #region Animator IDs
 
@@ -51,6 +51,7 @@ public class PlayerFastNetworkController : NetworkBehaviour
 
     [Header("Local UI")]
     [SerializeField] private BackpackUIController backpackUIController;
+    [SerializeField] private PlayerControlModeController controlModeController;
 
     [Header("Presentation")]
     [SerializeField] private Animator animator;
@@ -87,6 +88,7 @@ public class PlayerFastNetworkController : NetworkBehaviour
     private Vector3 rollDirection;
     private float rollEndTime;
     private bool localAssemblyOpen;
+    private bool gameplayInputEnabled = true;
     private Camera cachedMainCamera;
 
     #endregion
@@ -113,6 +115,7 @@ public class PlayerFastNetworkController : NetworkBehaviour
     {
         characterController = GetComponent<CharacterController>();
         animator = GetComponentInChildren<Animator>();
+        controlModeController = GetComponent<PlayerControlModeController>();
     }
 
     private void Start()
@@ -122,6 +125,12 @@ public class PlayerFastNetworkController : NetworkBehaviour
         if (!isLocalPlayer)
         {
             DisableRemotePlayerLocalControl();
+            return;
+        }
+
+        if (controlModeController == null)
+        {
+            controlModeController = GetComponent<PlayerControlModeController>();
         }
     }
 
@@ -213,6 +222,26 @@ public class PlayerFastNetworkController : NetworkBehaviour
     public void SetBackpackUIController(BackpackUIController controller)
     {
         backpackUIController = controller;
+
+        if (controlModeController != null)
+        {
+            controlModeController.SetBackpackUIController(controller);
+        }
+    }
+
+    /// <summary>
+    /// Enables or disables local gameplay input without disabling the local KCC motor.
+    /// </summary>
+    public void SetGameplayInputEnabled(bool enabledValue)
+    {
+        gameplayInputEnabled = enabledValue;
+
+        if (!gameplayInputEnabled)
+        {
+            verticalVelocity = 0f;
+            isRolling = false;
+            rollDirection = Vector3.zero;
+        }
     }
 
     #endregion
@@ -227,7 +256,7 @@ public class PlayerFastNetworkController : NetworkBehaviour
             return;
         }
 
-        if (isAssemblyMode)
+        if (!gameplayInputEnabled || isAssemblyMode)
         {
             return;
         }
@@ -247,7 +276,16 @@ public class PlayerFastNetworkController : NetworkBehaviour
     {
         bool nextValue = !localAssemblyOpen;
         localAssemblyOpen = nextValue;
-        SetLocalAssemblyUI(nextValue);
+
+        if (controlModeController != null)
+        {
+            controlModeController.SetMode(nextValue ? PlayerControlMode.Assembly : PlayerControlMode.Gameplay);
+        }
+        else
+        {
+            SetLocalAssemblyUI(nextValue);
+        }
+
         CmdSetAssemblyMode(nextValue);
     }
 
@@ -289,7 +327,14 @@ public class PlayerFastNetworkController : NetworkBehaviour
     {
         Vector3 motion;
 
-        if (isRolling)
+        if (!gameplayInputEnabled || isAssemblyMode)
+        {
+            isRolling = false;
+            rollDirection = Vector3.zero;
+            verticalVelocity = 0f;
+            motion = Vector3.zero;
+        }
+        else if (isRolling)
         {
             motion = rollDirection * (rollDistance / Mathf.Max(rollDuration, Time.deltaTime));
 
@@ -503,7 +548,15 @@ public class PlayerFastNetworkController : NetworkBehaviour
         if (isLocalPlayer && localAssemblyOpen != newValue)
         {
             localAssemblyOpen = newValue;
-            SetLocalAssemblyUI(newValue);
+
+            if (controlModeController != null)
+            {
+                controlModeController.SetMode(newValue ? PlayerControlMode.Assembly : PlayerControlMode.Gameplay);
+            }
+            else
+            {
+                SetLocalAssemblyUI(newValue);
+            }
         }
 
         OnLocalAssemblyModeChanged?.Invoke(newValue);
@@ -537,7 +590,7 @@ public class PlayerFastNetworkController : NetworkBehaviour
         }
 
         Vector3 inputDirection = GetMoveDirection();
-        animator.SetFloat(AnimatorID.MoveSpeedID, inputDirection.magnitude);
+        animator.SetFloat(AnimatorID.MoveSpeedID, gameplayInputEnabled && !isAssemblyMode ? inputDirection.magnitude : 0f);
     }
 
     private void SetLocalAssemblyUI(bool open)

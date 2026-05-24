@@ -12,6 +12,7 @@ Codex may inspect and modify only these folders unless I explicitly say otherwis
 - Assets/Network/
 - Assets/BaseData/
 - Assets/DataScript/
+- Assets/test(delete)/
 
 ## Forbidden areas
 

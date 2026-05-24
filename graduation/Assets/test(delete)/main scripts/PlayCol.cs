@@ -6,7 +6,7 @@ using KinematicCharacterController;
 using Cinemachine;
 using System.Collections;
 
-public class PlayCol : NetworkBehaviour, ICharacterController
+public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputModeReceiver
 {
     public enum PlayerPose
     {
@@ -81,6 +81,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     public float cameraShakeStrength = 0.3f;
     public CinemachineImpulseSource impulseSource;
 
+    [Header("Control Mode")]
+    [SerializeField] private PlayerControlModeController controlModeController;
+    [SerializeField] private Key assemblyModeKey = Key.B;
+
     [SyncVar(hook = nameof(OnHpChanged))]
     private int _hp = 100;
 
@@ -117,11 +121,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     private bool _wasJumpRequested = false;
     private float _jumpStartTime = -1f;
     private const float MIN_JUMP_AIRTIME = 0.15f;
+    private bool _gameplayInputEnabled = true;
 
     void Awake()
     {
         _motor = GetComponent<KinematicCharacterMotor>();
         _animator = GetComponent<Animator>();
+        controlModeController = GetComponent<PlayerControlModeController>();
         _motor.CharacterController = this;
     }
 
@@ -156,11 +162,94 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     {
         if (!isLocalPlayer) return;
 
+        HandleControlModeToggleInput();
+
+        if (!_gameplayInputEnabled)
+        {
+            UpdateGameplayInputDisabled();
+            return;
+        }
+
         UpdateInput();
         UpdateState();
         UpdateMovement();
         UpdateAnimation();
         SyncAnimationToServer();
+    }
+
+    private void HandleControlModeToggleInput()
+    {
+        if (Keyboard.current == null || !Keyboard.current[assemblyModeKey].wasPressedThisFrame)
+        {
+            return;
+        }
+
+        if (controlModeController == null)
+        {
+            controlModeController = GetComponent<PlayerControlModeController>();
+        }
+
+        if (controlModeController != null)
+        {
+            controlModeController.ToggleAssemblyMode();
+        }
+    }
+
+    /// <summary>
+    /// Enables or disables local gameplay input without disabling KCC or Mirror components.
+    /// </summary>
+    public void SetGameplayInputEnabled(bool enabledValue)
+    {
+        _gameplayInputEnabled = enabledValue;
+
+        if (!_gameplayInputEnabled)
+        {
+            ResetLocalGameplayInput();
+            return;
+        }
+
+        if (_currentPose != PlayerPose.Die && _currentPose != PlayerPose.Hit)
+        {
+            _canChangeState = true;
+        }
+    }
+
+    private void UpdateGameplayInputDisabled()
+    {
+        ResetLocalGameplayInput();
+        UpdateAnimation();
+    }
+
+    private void ResetLocalGameplayInput()
+    {
+        _moveInput = Vector2.zero;
+        _moveDirection = Vector3.zero;
+        _isRunning = false;
+        _jumpRequested = false;
+        _wasJumpRequested = false;
+        _isCharging = false;
+        _chargeRatio = 0f;
+        _dashDirection = Vector3.zero;
+        _dashTimer = 0f;
+        _attackFired = false;
+        _verticalVelocity = 0f;
+
+        if (_currentPose != PlayerPose.Die && _currentPose != PlayerPose.Hit)
+        {
+            _canChangeState = true;
+            ChangeState(PlayerPose.Grounded);
+            _moveState = MoveState.Idle;
+        }
+
+        if (_animator != null)
+        {
+            _animator.SetBool("IsMoving", false);
+            _animator.SetBool("IsRunning", false);
+            _animator.SetBool("IsStopping", false);
+            _animator.SetFloat("SpeedX", 0f);
+            _animator.SetFloat("SpeedZ", 0f);
+            _animator.SetFloat("ChargeRatio", 0f);
+        }
     }
 
     private void UpdateInput()
@@ -329,6 +418,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController
 
     private void SyncAnimationToServer()
     {
+        if (!NetworkClient.active || !NetworkClient.ready)
+        {
+            return;
+        }
+
         _syncTimer += Time.deltaTime;
         if (_syncTimer < SYNC_INTERVAL) return;
         _syncTimer = 0f;
@@ -488,6 +582,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     public void OnAttackHit()
     {
         if (!isLocalPlayer) return;
+        if (!_gameplayInputEnabled) return;
+        if (!NetworkClient.active || !NetworkClient.ready) return;
         if (_attackFired) return;
         _attackFired = true;
 
@@ -564,12 +660,20 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     public void OnMove(InputValue value)
     {
         if (!isLocalPlayer) return;
+        if (!_gameplayInputEnabled)
+        {
+            _moveInput = Vector2.zero;
+            return;
+        }
+
         _moveInput = value.Get<Vector2>();
     }
 
     public void OnJump(InputValue value)
     {
         if (!isLocalPlayer) return;
+        if (!_gameplayInputEnabled) return;
+
         if (value.isPressed && _currentPose == PlayerPose.Grounded
             && _motor.GroundingStatus.IsStableOnGround && _canChangeState)
         {
@@ -583,6 +687,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     public void OnAttack(InputValue value)
     {
         if (!isLocalPlayer) return;
+        if (!_gameplayInputEnabled) return;
 
         if (value.isPressed)
         {
@@ -614,6 +719,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     {
         if (!isLocalPlayer) return;
 
+        if (!_gameplayInputEnabled)
+        {
+            currentVelocity = Vector3.zero;
+            _verticalVelocity = 0f;
+            return;
+        }
+
         if (_dashTimer > 0f)
         {
             _dashTimer -= deltaTime;
@@ -625,7 +737,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController
                 _attackFired = true;
                 impulseSource?.GenerateImpulse(cameraShakeStrength);
                 StartCoroutine(HitStop(hitStopDuration));
-                CmdDoAttack(transform.forward);
+
+                if (NetworkClient.active && NetworkClient.ready)
+                {
+                    CmdDoAttack(transform.forward);
+                }
             }
 
             return;

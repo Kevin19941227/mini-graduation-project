@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PlacedPartDragHandler : MonoBehaviour
 {
+    #region Runtime Data
+
     private int partID;
     private PlayerInventoryNetwork inventory;
     private BackpackUIController backpackUIController;
@@ -18,6 +20,10 @@ public class PlacedPartDragHandler : MonoBehaviour
     private PartAttachSurface currentAttachSurface;
     private bool isInitialized;
     private bool isDragging;
+
+    #endregion
+
+    #region Public Methods
 
     /// <summary>
     /// Initializes dragging support for an installed part.
@@ -52,6 +58,10 @@ public class PlacedPartDragHandler : MonoBehaviour
         SetCollidersForDragMode();
     }
 
+    #endregion
+
+    #region Mouse Events
+
     private void OnMouseDown()
     {
         if (!isInitialized || !backpackUIController.IsBackpackOpen())
@@ -60,6 +70,7 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         isDragging = true;
+        backpackUIController.SetBackpackBlocksRaycasts(false);
         dragRotationOffset = Vector3.zero;
         dragFollowDistance = Mathf.Clamp(GetCurrentCameraDistance(), minPlacementDistance, maxPlacementDistance);
     }
@@ -103,6 +114,7 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         isDragging = false;
+        backpackUIController.SetBackpackBlocksRaycasts(true);
 
         if (!backpackUIController.IsScreenPositionOverBackpack(Input.mousePosition))
         {
@@ -113,6 +125,10 @@ public class PlacedPartDragHandler : MonoBehaviour
         inventory.CmdReturnInstalledPartToBackpack(partID);
         Destroy(gameObject);
     }
+
+    #endregion
+
+    #region Drag Logic
 
     private bool TryGetPlacementPose(Vector2 screenPosition, out Vector3 worldPosition, out Quaternion worldRotation)
     {
@@ -126,10 +142,9 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         Ray ray = cameraToUse.ScreenPointToRay(screenPosition);
-        Vector3 freeWorldPosition = ray.GetPoint(dragFollowDistance);
 
-        if (TryGetAttachPoseFromPartCenter(
-            freeWorldPosition,
+        if (TryGetAttachPoseFromScreenRay(
+            ray,
             cameraToUse.transform.forward,
             out PartAttachSurface attachSurface,
             out worldPosition,
@@ -140,6 +155,7 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         currentAttachSurface = null;
+        Vector3 freeWorldPosition = ray.GetPoint(dragFollowDistance);
         worldPosition = freeWorldPosition;
         worldRotation = Quaternion.Euler(dragRotationOffset);
         return true;
@@ -218,18 +234,29 @@ public class PlacedPartDragHandler : MonoBehaviour
 
     private void AttachToCurrentSurface()
     {
-        if (currentAttachSurface == null || currentAttachSurface.AttachRoot == null)
+        if (currentAttachSurface == null)
+        {
+            return;
+        }
+
+        Transform attachRoot = currentAttachSurface.ResolveAttachRoot(transform.position);
+
+        if (attachRoot == null)
         {
             return;
         }
 
         Transform oldParent = transform.parent;
-        Transform attachPoint = CreateRuntimeAttachPoint(currentAttachSurface.AttachRoot);
+        Transform attachPoint = CreateRuntimeAttachPoint(attachRoot);
         transform.SetParent(attachPoint, true);
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.identity;
         CleanupEmptyRuntimeAttachPoint(oldParent);
     }
+
+    #endregion
+
+    #region Attach Helpers
 
     private Transform CreateRuntimeAttachPoint(Transform attachRoot)
     {
@@ -271,46 +298,43 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
     }
 
-    private bool TryGetAttachPoseFromPartCenter(
-        Vector3 partCenter,
+    private bool TryGetAttachPoseFromScreenRay(
+        Ray ray,
         Vector3 cameraForward,
         out PartAttachSurface attachSurface,
         out Vector3 worldPosition,
         out Quaternion worldRotation)
     {
-        float nearestDistance = float.PositiveInfinity;
-        Collider nearestCollider = null;
         attachSurface = null;
         worldPosition = Vector3.zero;
         worldRotation = Quaternion.identity;
 
-        if (placementProbeRadius <= 0f)
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            placementRayDistance,
+            placementMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (hits == null || hits.Length == 0)
         {
             return false;
         }
 
-        Collider[] colliders = Physics.OverlapSphere(
-            partCenter,
-            placementProbeRadius,
-            placementMask,
-            QueryTriggerInteraction.Collide
-        );
+        System.Array.Sort(hits, CompareRaycastHitDistance);
 
-        for (int i = 0; i < colliders.Length; i++)
+        for (int i = 0; i < hits.Length; i++)
         {
-            Collider hitCollider = colliders[i];
+            Collider hitCollider = hits[i].collider;
 
             if (IsIgnoredAttachCollider(hitCollider))
             {
                 continue;
             }
 
-            if (hitCollider.GetComponent<MeshCollider>() == null)
-            {
-                continue;
-            }
+            MeshCollider meshCollider = hitCollider as MeshCollider;
 
-            if (hitCollider.GetComponentInParent<PartAttachSurface>() == null)
+            if (meshCollider == null || meshCollider.sharedMesh == null)
             {
                 continue;
             }
@@ -322,33 +346,23 @@ public class PlacedPartDragHandler : MonoBehaviour
                 continue;
             }
 
-            Vector3 closestPoint = hitCollider.ClosestPoint(partCenter);
-            float sqrDistance = (partCenter - closestPoint).sqrMagnitude;
-
-            if (sqrDistance >= nearestDistance)
-            {
-                continue;
-            }
-
-            nearestDistance = sqrDistance;
-            nearestCollider = hitCollider;
             attachSurface = surface;
+            attachSurface.BuildAttachPoseFromHit(
+                hits[i],
+                cameraForward,
+                dragRotationOffset,
+                out worldPosition,
+                out worldRotation
+            );
+            return true;
         }
 
-        if (attachSurface == null || nearestCollider == null)
-        {
-            return false;
-        }
+        return false;
+    }
 
-        attachSurface.BuildAttachPoseFromCenter(
-            nearestCollider,
-            partCenter,
-            cameraForward,
-            dragRotationOffset,
-            out worldPosition,
-            out worldRotation
-        );
-        return true;
+    private static int CompareRaycastHitDistance(RaycastHit left, RaycastHit right)
+    {
+        return left.distance.CompareTo(right.distance);
     }
 
     private bool TryGetRendererLocalBounds(out Bounds localBounds)
@@ -396,4 +410,6 @@ public class PlacedPartDragHandler : MonoBehaviour
             colliders[i].isTrigger = true;
         }
     }
+
+    #endregion
 }

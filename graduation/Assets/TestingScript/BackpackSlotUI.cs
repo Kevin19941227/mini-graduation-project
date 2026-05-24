@@ -4,9 +4,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class BackpackSlotUI : MonoBehaviour,
-    IPointerEnterHandler,
-    IPointerExitHandler,
-    IPointerMoveHandler,
     IBeginDragHandler,
     IDragHandler,
     IEndDragHandler
@@ -25,9 +22,6 @@ public class BackpackSlotUI : MonoBehaviour,
     private PartData currentPartData;
 
     private System.Action<StoredPartRuntimeData, PartData> clickedCallback;
-    private System.Action<StoredPartRuntimeData, PartData, Vector2> hoveredCallback;
-    private System.Action<Vector2> hoverMoveCallback;
-    private System.Action hoverExitCallback;
     private System.Action<StoredPartRuntimeData, PartData, Vector2> beginDragCallback;
     private System.Action<Vector2> dragCallback;
     private System.Action<Vector2> endDragCallback;
@@ -56,13 +50,13 @@ public class BackpackSlotUI : MonoBehaviour,
 
     #region Public Methods
 
+    /// <summary>
+    /// Displays part data and stores slot event callbacks.
+    /// </summary>
     public void Set(
         StoredPartRuntimeData slotData,
         PartData partData,
         System.Action<StoredPartRuntimeData, PartData> onClicked,
-        System.Action<StoredPartRuntimeData, PartData, Vector2> onHovered,
-        System.Action<Vector2> onHoverMove,
-        System.Action onHoverExit,
         System.Action<StoredPartRuntimeData, PartData, Vector2> onBeginDrag,
         System.Action<Vector2> onDrag,
         System.Action<Vector2> onEndDrag)
@@ -71,9 +65,6 @@ public class BackpackSlotUI : MonoBehaviour,
         currentPartData = partData;
 
         clickedCallback = onClicked;
-        hoveredCallback = onHovered;
-        hoverMoveCallback = onHoverMove;
-        hoverExitCallback = onHoverExit;
         beginDragCallback = onBeginDrag;
         dragCallback = onDrag;
         endDragCallback = onEndDrag;
@@ -101,15 +92,15 @@ public class BackpackSlotUI : MonoBehaviour,
         }
     }
 
+    /// <summary>
+    /// Clears displayed part data and disables slot interaction.
+    /// </summary>
     public void Clear()
     {
         currentSlotData = default;
         currentPartData = null;
 
         clickedCallback = null;
-        hoveredCallback = null;
-        hoverMoveCallback = null;
-        hoverExitCallback = null;
         beginDragCallback = null;
         dragCallback = null;
         endDragCallback = null;
@@ -149,31 +140,9 @@ public class BackpackSlotUI : MonoBehaviour,
 
     #region Pointer Events
 
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        if (currentPartData == null)
-        {
-            return;
-        }
-
-        hoveredCallback?.Invoke(currentSlotData, currentPartData, eventData.position);
-    }
-
-    public void OnPointerMove(PointerEventData eventData)
-    {
-        if (currentPartData == null)
-        {
-            return;
-        }
-
-        hoverMoveCallback?.Invoke(eventData.position);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        hoverExitCallback?.Invoke();
-    }
-
+    /// <summary>
+    /// Starts dragging the current part slot.
+    /// </summary>
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (currentPartData == null)
@@ -184,6 +153,9 @@ public class BackpackSlotUI : MonoBehaviour,
         beginDragCallback?.Invoke(currentSlotData, currentPartData, eventData.position);
     }
 
+    /// <summary>
+    /// Updates dragging for the current part slot.
+    /// </summary>
     public void OnDrag(PointerEventData eventData)
     {
         if (currentPartData == null)
@@ -194,6 +166,9 @@ public class BackpackSlotUI : MonoBehaviour,
         dragCallback?.Invoke(eventData.position);
     }
 
+    /// <summary>
+    /// Ends dragging the current part slot.
+    /// </summary>
     public void OnEndDrag(PointerEventData eventData)
     {
         if (currentPartData == null)

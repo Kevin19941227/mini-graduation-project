@@ -11,6 +11,20 @@ public class PartAttachSurface : MonoBehaviour
 
     [Header("Attach Transform")]
     [SerializeField] private Transform attachRoot;
+    [SerializeField] private Transform[] attachRootCandidates;
+    [SerializeField] private bool autoCollectSkinnedMeshBones = true;
+    [SerializeField] private string[] autoBoneNameFilters =
+    {
+        "spine",
+        "chest",
+        "head",
+        "hand",
+        "forearm",
+        "arm",
+        "leg",
+        "foot",
+        "thigh"
+    };
     [SerializeField] private bool alignToSurfaceNormal = true;
     [SerializeField] private float surfaceOffset = 0.02f;
 
@@ -41,6 +55,61 @@ public class PartAttachSurface : MonoBehaviour
     }
 
     /// <summary>
+    /// Resolves the bone or transform that should own an installed part at the given world position.
+    /// </summary>
+    public Transform ResolveAttachRoot(Vector3 worldPosition)
+    {
+        if (attachRoot != null)
+        {
+            return attachRoot;
+        }
+
+        Transform nearestCandidate = FindNearestAttachRootCandidate(worldPosition);
+
+        if (nearestCandidate != null)
+        {
+            return nearestCandidate;
+        }
+
+        return transform;
+    }
+
+    /// <summary>
+    /// Builds the world-space pose from a raycast hit on an attach MeshCollider.
+    /// </summary>
+    public void BuildAttachPoseFromHit(
+        RaycastHit hit,
+        Vector3 cameraForward,
+        Vector3 rotationOffsetEuler,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
+    {
+        Vector3 surfaceNormal = hit.normal;
+
+        if (surfaceNormal == Vector3.zero)
+        {
+            surfaceNormal = -cameraForward.normalized;
+        }
+
+        if (surfaceNormal == Vector3.zero)
+        {
+            surfaceNormal = transform.forward;
+        }
+
+        Quaternion offsetRotation = Quaternion.Euler(rotationOffsetEuler);
+        worldPosition = hit.point + surfaceNormal.normalized * surfaceOffset;
+
+        if (!alignToSurfaceNormal)
+        {
+            worldRotation = offsetRotation;
+            return;
+        }
+
+        Quaternion surfaceRotation = Quaternion.LookRotation(surfaceNormal.normalized, Vector3.up);
+        worldRotation = surfaceRotation * offsetRotation;
+    }
+
+    /// <summary>
     /// Builds the world-space pose at the pointer hit point.
     /// </summary>
     public void BuildAttachPose(
@@ -50,76 +119,118 @@ public class PartAttachSurface : MonoBehaviour
         out Vector3 worldPosition,
         out Quaternion worldRotation)
     {
-        Vector3 surfaceNormal = hit.normal.sqrMagnitude > 0f ? hit.normal.normalized : transform.up;
-        worldPosition = hit.point + surfaceNormal * surfaceOffset;
-
-        if (!alignToSurfaceNormal)
-        {
-            worldRotation = Quaternion.Euler(rotationOffset);
-            return;
-        }
-
-        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
-
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
-        {
-            forwardOnSurface = Vector3.ProjectOnPlane(transform.forward, surfaceNormal);
-        }
-
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
-        {
-            forwardOnSurface = Vector3.forward;
-        }
-
-        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
-        worldRotation = surfaceRotation * Quaternion.Euler(rotationOffset);
+        BuildAttachPoseFromHit(hit, cameraForward, rotationOffset, out worldPosition, out worldRotation);
     }
 
-    /// <summary>
-    /// Builds the world-space pose from the dragged part center to a nearby attach collider.
-    /// </summary>
-    public void BuildAttachPoseFromCenter(
-        Collider attachCollider,
-        Vector3 partCenter,
-        Vector3 cameraForward,
-        Vector3 rotationOffset,
-        out Vector3 worldPosition,
-        out Quaternion worldRotation)
+    #endregion
+
+    #region Attach Root Resolution
+
+    private Transform FindNearestAttachRootCandidate(Vector3 worldPosition)
     {
-        Vector3 surfacePoint = attachCollider != null ? attachCollider.ClosestPoint(partCenter) : partCenter;
-        Vector3 surfaceNormal = partCenter - surfacePoint;
+        Transform nearestCandidate = FindNearestExplicitCandidate(worldPosition);
 
-        if (surfaceNormal.sqrMagnitude < 0.0001f)
+        if (nearestCandidate != null || !autoCollectSkinnedMeshBones)
         {
-            surfaceNormal = transform.up;
-        }
-        else
-        {
-            surfaceNormal.Normalize();
+            return nearestCandidate;
         }
 
-        worldPosition = surfacePoint + surfaceNormal * surfaceOffset;
+        return FindNearestSkinnedMeshBone(worldPosition);
+    }
 
-        if (!alignToSurfaceNormal)
+    private Transform FindNearestExplicitCandidate(Vector3 worldPosition)
+    {
+        if (attachRootCandidates == null || attachRootCandidates.Length == 0)
         {
-            worldRotation = Quaternion.Euler(rotationOffset);
-            return;
+            return null;
         }
 
-        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
+        Transform nearestCandidate = null;
+        float nearestSqrDistance = float.PositiveInfinity;
 
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
+        for (int i = 0; i < attachRootCandidates.Length; i++)
         {
-            forwardOnSurface = Vector3.ProjectOnPlane(transform.forward, surfaceNormal);
+            Transform candidate = attachRootCandidates[i];
+
+            if (candidate == null)
+            {
+                continue;
+            }
+
+            float sqrDistance = (candidate.position - worldPosition).sqrMagnitude;
+
+            if (sqrDistance >= nearestSqrDistance)
+            {
+                continue;
+            }
+
+            nearestSqrDistance = sqrDistance;
+            nearestCandidate = candidate;
         }
 
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
+        return nearestCandidate;
+    }
+
+    private Transform FindNearestSkinnedMeshBone(Vector3 worldPosition)
+    {
+        Transform root = transform.root != null ? transform.root : transform;
+        SkinnedMeshRenderer[] renderers = root.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        Transform nearestBone = null;
+        float nearestSqrDistance = float.PositiveInfinity;
+
+        for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
         {
-            forwardOnSurface = Vector3.forward;
+            Transform[] bones = renderers[rendererIndex].bones;
+
+            if (bones == null)
+            {
+                continue;
+            }
+
+            for (int boneIndex = 0; boneIndex < bones.Length; boneIndex++)
+            {
+                Transform bone = bones[boneIndex];
+
+                if (bone == null || !IsAllowedAutoBone(bone))
+                {
+                    continue;
+                }
+
+                float sqrDistance = (bone.position - worldPosition).sqrMagnitude;
+
+                if (sqrDistance >= nearestSqrDistance)
+                {
+                    continue;
+                }
+
+                nearestSqrDistance = sqrDistance;
+                nearestBone = bone;
+            }
         }
 
-        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
-        worldRotation = surfaceRotation * Quaternion.Euler(rotationOffset);
+        return nearestBone;
+    }
+
+    private bool IsAllowedAutoBone(Transform bone)
+    {
+        if (autoBoneNameFilters == null || autoBoneNameFilters.Length == 0)
+        {
+            return true;
+        }
+
+        string boneName = bone.name.ToLowerInvariant();
+
+        for (int i = 0; i < autoBoneNameFilters.Length; i++)
+        {
+            string filter = autoBoneNameFilters[i];
+
+            if (!string.IsNullOrWhiteSpace(filter) && boneName.Contains(filter.ToLowerInvariant()))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     #endregion

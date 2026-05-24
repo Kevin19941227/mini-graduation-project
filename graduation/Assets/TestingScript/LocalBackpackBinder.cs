@@ -12,6 +12,7 @@ public class LocalBackpackBinder : MonoBehaviour
     #region Runtime Data
 
     private bool isBound;
+    private NetworkIdentity boundLocalPlayer;
 
     #endregion
 
@@ -39,18 +40,21 @@ public class LocalBackpackBinder : MonoBehaviour
     /// </summary>
     private void TryBindLocalPlayer()
     {
-        if (isBound)
+        NetworkIdentity localPlayer = NetworkClient.localPlayer;
+
+        if (localPlayer == null)
         {
+            ClearBinding();
             return;
         }
 
-        if (NetworkClient.localPlayer == null)
+        if (isBound && boundLocalPlayer == localPlayer)
         {
             return;
         }
 
         PlayerInventoryNetwork inventory =
-            NetworkClient.localPlayer.GetComponent<PlayerInventoryNetwork>();
+            localPlayer.GetComponent<PlayerInventoryNetwork>();
 
         if (inventory == null)
         {
@@ -63,8 +67,24 @@ public class LocalBackpackBinder : MonoBehaviour
         }
 
         backpackUIController.Bind(inventory);
+        boundLocalPlayer = localPlayer;
         isBound = true;
     }
 
+    private void ClearBinding()
+    {
+        if (!isBound && boundLocalPlayer == null)
+        {
+            return;
+        }
+
+        if (backpackUIController != null)
+        {
+            backpackUIController.Bind(null);
+        }
+
+        boundLocalPlayer = null;
+        isBound = false;
+    }
     #endregion
 }

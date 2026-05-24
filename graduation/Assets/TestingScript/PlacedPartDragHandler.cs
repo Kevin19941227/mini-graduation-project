@@ -8,12 +8,20 @@ public class PlacedPartDragHandler : MonoBehaviour
     private Camera placementCamera;
     private LayerMask placementMask;
     private float placementRayDistance;
-    private float fallbackPlacementDistance;
+    private float placementProbeRadius;
     private float placementRotationSpeed;
-    private float dragYawOffset;
+    private float minPlacementDistance;
+    private float maxPlacementDistance;
+    private float placementDistanceScrollSpeed;
+    private float dragFollowDistance;
+    private Vector3 dragRotationOffset;
+    private PartAttachSurface currentAttachSurface;
     private bool isInitialized;
     private bool isDragging;
 
+    /// <summary>
+    /// Initializes dragging support for an installed part.
+    /// </summary>
     public void Initialize(
         int initializedPartID,
         PlayerInventoryNetwork initializedInventory,
@@ -21,8 +29,11 @@ public class PlacedPartDragHandler : MonoBehaviour
         Camera initializedPlacementCamera,
         LayerMask initializedPlacementMask,
         float initializedPlacementRayDistance,
-        float initializedFallbackPlacementDistance,
-        float initializedPlacementRotationSpeed)
+        float initializedPlacementProbeRadius,
+        float initializedPlacementRotationSpeed,
+        float initializedMinPlacementDistance,
+        float initializedMaxPlacementDistance,
+        float initializedPlacementDistanceScrollSpeed)
     {
         partID = initializedPartID;
         inventory = initializedInventory;
@@ -30,11 +41,15 @@ public class PlacedPartDragHandler : MonoBehaviour
         placementCamera = initializedPlacementCamera;
         placementMask = initializedPlacementMask;
         placementRayDistance = initializedPlacementRayDistance;
-        fallbackPlacementDistance = initializedFallbackPlacementDistance;
+        placementProbeRadius = initializedPlacementProbeRadius;
         placementRotationSpeed = initializedPlacementRotationSpeed;
+        minPlacementDistance = initializedMinPlacementDistance;
+        maxPlacementDistance = Mathf.Max(initializedMaxPlacementDistance, minPlacementDistance);
+        placementDistanceScrollSpeed = initializedPlacementDistanceScrollSpeed;
         isInitialized = partID > 0 && inventory != null && backpackUIController != null;
 
         EnsureDragCollider();
+        SetCollidersForDragMode();
     }
 
     private void OnMouseDown()
@@ -45,10 +60,21 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         isDragging = true;
-        dragYawOffset = transform.eulerAngles.y;
+        dragRotationOffset = Vector3.zero;
+        dragFollowDistance = Mathf.Clamp(GetCurrentCameraDistance(), minPlacementDistance, maxPlacementDistance);
     }
 
-    private void OnMouseDrag()
+    private void Update()
+    {
+        if (!isDragging)
+        {
+            return;
+        }
+
+        DragToScreenPosition(Input.mousePosition);
+    }
+
+    private void DragToScreenPosition(Vector2 screenPosition)
     {
         if (!isDragging)
         {
@@ -63,7 +89,7 @@ public class PlacedPartDragHandler : MonoBehaviour
 
         UpdateRotationInput();
 
-        if (TryGetPlacementPose(Input.mousePosition, out Vector3 worldPosition, out Quaternion worldRotation))
+        if (TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
         {
             transform.SetPositionAndRotation(worldPosition, worldRotation);
         }
@@ -80,6 +106,7 @@ public class PlacedPartDragHandler : MonoBehaviour
 
         if (!backpackUIController.IsScreenPositionOverBackpack(Input.mousePosition))
         {
+            AttachToCurrentSurface();
             return;
         }
 
@@ -99,57 +126,129 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
 
         Ray ray = cameraToUse.ScreenPointToRay(screenPosition);
+        Vector3 freeWorldPosition = ray.GetPoint(dragFollowDistance);
 
-        if (TryRaycastPlacement(ray, out RaycastHit hit))
+        if (TryGetAttachPoseFromPartCenter(
+            freeWorldPosition,
+            cameraToUse.transform.forward,
+            out PartAttachSurface attachSurface,
+            out worldPosition,
+            out worldRotation))
         {
-            worldPosition = hit.point;
-            worldRotation = BuildPlacementRotation(cameraToUse.transform.forward, hit.normal);
+            currentAttachSurface = attachSurface;
             return true;
         }
 
-        worldPosition = ray.GetPoint(fallbackPlacementDistance);
-        worldRotation = Quaternion.Euler(0f, dragYawOffset, 0f);
+        currentAttachSurface = null;
+        worldPosition = freeWorldPosition;
+        worldRotation = Quaternion.Euler(dragRotationOffset);
         return true;
     }
 
     private void UpdateRotationInput()
     {
-        float direction = 0f;
+        UpdateFollowDistanceInput();
+
+        Vector3 direction = Vector3.zero;
 
         if (Input.GetKey(KeyCode.Q))
         {
-            direction -= 1f;
+            direction.x -= 1f;
         }
 
         if (Input.GetKey(KeyCode.E))
         {
-            direction += 1f;
+            direction.x += 1f;
         }
 
-        float scroll = Input.mouseScrollDelta.y;
-        if (!Mathf.Approximately(scroll, 0f))
+        if (Input.GetKey(KeyCode.Alpha1))
         {
-            direction += scroll;
+            direction.y -= 1f;
         }
 
-        if (!Mathf.Approximately(direction, 0f))
+        if (Input.GetKey(KeyCode.Alpha2))
         {
-            dragYawOffset += direction * placementRotationSpeed * Time.deltaTime;
+            direction.y += 1f;
+        }
+
+        if (Input.GetKey(KeyCode.Alpha3))
+        {
+            direction.z -= 1f;
+        }
+
+        if (Input.GetKey(KeyCode.Alpha4))
+        {
+            direction.z += 1f;
+        }
+
+        if (direction.sqrMagnitude > 0f)
+        {
+            dragRotationOffset += direction * placementRotationSpeed * Time.deltaTime;
         }
     }
 
-    private Quaternion BuildPlacementRotation(Vector3 cameraForward, Vector3 surfaceNormal)
+    private void UpdateFollowDistanceInput()
     {
-        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
+        float scroll = Input.mouseScrollDelta.y;
 
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
+        if (Mathf.Approximately(scroll, 0f))
         {
-            forwardOnSurface = Vector3.ProjectOnPlane(Vector3.forward, surfaceNormal);
+            return;
         }
 
-        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
-        Quaternion yawRotation = Quaternion.AngleAxis(dragYawOffset, surfaceNormal);
-        return yawRotation * surfaceRotation;
+        dragFollowDistance = Mathf.Clamp(
+            dragFollowDistance + scroll * placementDistanceScrollSpeed,
+            minPlacementDistance,
+            maxPlacementDistance
+        );
+    }
+
+    private float GetCurrentCameraDistance()
+    {
+        Camera cameraToUse = placementCamera != null ? placementCamera : Camera.main;
+
+        if (cameraToUse == null)
+        {
+            return 3f;
+        }
+
+        float distance = Vector3.Dot(transform.position - cameraToUse.transform.position, cameraToUse.transform.forward);
+        return Mathf.Max(0.5f, distance);
+    }
+
+    private void AttachToCurrentSurface()
+    {
+        if (currentAttachSurface == null || currentAttachSurface.AttachRoot == null)
+        {
+            return;
+        }
+
+        Transform oldParent = transform.parent;
+        Transform attachPoint = CreateRuntimeAttachPoint(currentAttachSurface.AttachRoot);
+        transform.SetParent(attachPoint, true);
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+        CleanupEmptyRuntimeAttachPoint(oldParent);
+    }
+
+    private Transform CreateRuntimeAttachPoint(Transform attachRoot)
+    {
+        GameObject attachPointObject = new GameObject(name + " AttachPoint");
+        Transform attachPoint = attachPointObject.transform;
+        attachPoint.SetParent(attachRoot, false);
+        attachPoint.SetPositionAndRotation(transform.position, transform.rotation);
+        attachPoint.localScale = Vector3.one;
+        return attachPoint;
+    }
+
+    private void CleanupEmptyRuntimeAttachPoint(Transform attachPoint)
+    {
+        if (attachPoint == null || attachPoint.childCount > 0 || !attachPoint.name.EndsWith(" AttachPoint"))
+        {
+            return;
+        }
+
+        Destroy(attachPoint.gameObject);
     }
 
     private void EnsureDragCollider()
@@ -172,29 +271,84 @@ public class PlacedPartDragHandler : MonoBehaviour
         }
     }
 
-    private bool TryRaycastPlacement(Ray ray, out RaycastHit nearestHit)
+    private bool TryGetAttachPoseFromPartCenter(
+        Vector3 partCenter,
+        Vector3 cameraForward,
+        out PartAttachSurface attachSurface,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
     {
-        RaycastHit[] hits = Physics.RaycastAll(ray, placementRayDistance, placementMask);
         float nearestDistance = float.PositiveInfinity;
-        nearestHit = default;
+        Collider nearestCollider = null;
+        attachSurface = null;
+        worldPosition = Vector3.zero;
+        worldRotation = Quaternion.identity;
 
-        for (int i = 0; i < hits.Length; i++)
+        if (placementProbeRadius <= 0f)
         {
-            if (hits[i].collider == null || hits[i].collider.transform.IsChildOf(transform))
-            {
-                continue;
-            }
-
-            if (hits[i].distance >= nearestDistance)
-            {
-                continue;
-            }
-
-            nearestDistance = hits[i].distance;
-            nearestHit = hits[i];
+            return false;
         }
 
-        return nearestDistance < float.PositiveInfinity;
+        Collider[] colliders = Physics.OverlapSphere(
+            partCenter,
+            placementProbeRadius,
+            placementMask,
+            QueryTriggerInteraction.Collide
+        );
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider hitCollider = colliders[i];
+
+            if (IsIgnoredAttachCollider(hitCollider))
+            {
+                continue;
+            }
+
+            if (hitCollider.GetComponent<MeshCollider>() == null)
+            {
+                continue;
+            }
+
+            if (hitCollider.GetComponentInParent<PartAttachSurface>() == null)
+            {
+                continue;
+            }
+
+            PartAttachSurface surface = hitCollider.GetComponentInParent<PartAttachSurface>();
+
+            if (surface == null)
+            {
+                continue;
+            }
+
+            Vector3 closestPoint = hitCollider.ClosestPoint(partCenter);
+            float sqrDistance = (partCenter - closestPoint).sqrMagnitude;
+
+            if (sqrDistance >= nearestDistance)
+            {
+                continue;
+            }
+
+            nearestDistance = sqrDistance;
+            nearestCollider = hitCollider;
+            attachSurface = surface;
+        }
+
+        if (attachSurface == null || nearestCollider == null)
+        {
+            return false;
+        }
+
+        attachSurface.BuildAttachPoseFromCenter(
+            nearestCollider,
+            partCenter,
+            cameraForward,
+            dragRotationOffset,
+            out worldPosition,
+            out worldRotation
+        );
+        return true;
     }
 
     private bool TryGetRendererLocalBounds(out Bounds localBounds)
@@ -223,5 +377,23 @@ public class PlacedPartDragHandler : MonoBehaviour
     private Vector3 Abs(Vector3 value)
     {
         return new Vector3(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
+    }
+
+    private bool IsIgnoredAttachCollider(Collider hitCollider)
+    {
+        return hitCollider == null
+            || hitCollider is CapsuleCollider
+            || hitCollider.transform.IsChildOf(transform);
+    }
+
+    private void SetCollidersForDragMode()
+    {
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            colliders[i].enabled = true;
+            colliders[i].isTrigger = true;
+        }
     }
 }

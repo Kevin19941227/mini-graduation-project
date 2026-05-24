@@ -165,7 +165,43 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3616735183659104008}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c0d3288391550614f8a5c017fb5c320e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3126795942607291231}
+    - targetCorrespondingSourceObject: {fileID: -7623468522290961895, guid: c0d3288391550614f8a5c017fb5c320e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1278002149090034414}
   m_SourcePrefab: {fileID: 100100000, guid: c0d3288391550614f8a5c017fb5c320e, type: 3}
+--- !u!1 &2929207875167899642 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -7623468522290961895, guid: c0d3288391550614f8a5c017fb5c320e,
+    type: 3}
+  m_PrefabInstance: {fileID: 4509612649982553571}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &1278002149090034414
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2929207875167899642}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -8831164416631861406, guid: 64ad8d9d77179a24288c91d2958e71f0, type: 3}
 --- !u!1 &3626582003054039218 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: c0d3288391550614f8a5c017fb5c320e,
@@ -334,6 +370,24 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &3126795942607291231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3626582003054039218}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a9ebbb6874f7df43b761a80343db5a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attachPointID: 
+  acceptAnyPartType: 1
+  acceptedPartType: 4
+  attachRoot: {fileID: 0}
+  alignToSurfaceNormal: 1
+  surfaceOffset: 0.02
 --- !u!4 &4116261139563416072 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: c0d3288391550614f8a5c017fb5c320e,

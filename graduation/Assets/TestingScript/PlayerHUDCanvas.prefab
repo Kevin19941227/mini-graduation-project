@@ -225,12 +225,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panelRoot: {fileID: 677943478991306210}
+  applyRuntimePanelStyle: 1
+  fitSlotGridToPanel: 1
+  slotGridPadding: {x: 16, y: 16}
+  panelBackgroundColor: {r: 0.08, g: 0.1, b: 0.12, a: 0.88}
+  panelShadowColor: {r: 0, g: 0, b: 0, a: 0.45}
+  panelShadowDistance: {x: 6, y: -6}
   slotGridRoot: {fileID: 8868701327933911596}
   slotPrefab: {fileID: 0}
+  detailPanelRoot: {fileID: 0}
   detailIconImage: {fileID: 7356240711338432955}
   detailNameText: {fileID: 4517032983439899824}
   detailStatText: {fileID: 4960798509828392798}
   equipButton: {fileID: 8693694000743683603}
+  canvasRoot: {fileID: 0}
+  detailOffset: {x: 20, y: -20}
+  placementCamera: {fileID: 0}
+  placementMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  placementRayDistance: 100
+  fallbackPlacementDistance: 3
+  placementProbeRadius: 0.35
+  placementRotationSpeed: 120
+  requireMeshColliderAttachSurface: 1
   gameDatabase: {fileID: 0}
 --- !u!1 &854931609327327675
 GameObject:
@@ -367,7 +385,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 1
+  m_UiScaleMode: 0
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 800}

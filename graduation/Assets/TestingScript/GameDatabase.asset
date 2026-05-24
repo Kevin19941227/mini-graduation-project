@@ -15,8 +15,38 @@ MonoBehaviour:
   playerBaseData: {fileID: 11400000, guid: c08be7081a327b447b65d23895d86ce1, type: 2}
   parts:
   - {fileID: 11400000, guid: 235e8561e4d303f4eba5479bfb1b9d9e, type: 2}
-  - {fileID: 11400000, guid: c6a184624fdea2e4b8e3faa6ef19d17f, type: 2}
+  - {fileID: 11400000, guid: 742776d5400bb9844889e3ad416211a5, type: 2}
+  - {fileID: 11400000, guid: 245e9e895368076459f9a08f34b44919, type: 2}
+  - {fileID: 11400000, guid: d455068d5c01d844f984787fa50bf16c, type: 2}
+  - {fileID: 11400000, guid: e269968fa57581b4499087205af45730, type: 2}
+  - {fileID: 11400000, guid: 30f1bd74c9c8d8a4f926cb02acf9f4ce, type: 2}
+  - {fileID: 11400000, guid: edb32127cdaea5a499290af9c4f345a6, type: 2}
+  - {fileID: 11400000, guid: 08d7fd722f2df77448bbf3b56ad8b0b5, type: 2}
+  - {fileID: 11400000, guid: 57f856adc73851f40997f04ba9b0a3ff, type: 2}
+  - {fileID: 11400000, guid: af2d2b9ac7a2fc0418e60e7ae85b7040, type: 2}
+  - {fileID: 11400000, guid: 97689b4ce32d67d499173e5b1af92fb9, type: 2}
+  - {fileID: 11400000, guid: 3348c3071448a7a4f8bb3e0a0024f13c, type: 2}
+  - {fileID: 11400000, guid: 3a76699ff11886b41af225cf4b633e54, type: 2}
   monsters: []
   dropTables: []
   mapPieces: []
-  buffs: []
+  buffs:
+  - {fileID: 11400000, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400001, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400002, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400003, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400004, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400005, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400006, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400007, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400008, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400009, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400010, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400011, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400012, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400013, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400014, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400015, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400016, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400017, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  - {fileID: 11400018, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}

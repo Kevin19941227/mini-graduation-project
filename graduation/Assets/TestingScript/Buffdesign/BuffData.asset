@@ -1,0 +1,548 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Head_Poison_Attack_Buff
+  m_EditorClassIdentifier:
+  buffID: 1001
+  buffName: Virus Head Poison Attack
+  buffType: 0
+  description: Attack applies a short poison state and increases attack power.
+  statModifiers:
+  - statType: 1
+    mode: 1
+    value: 10
+  triggerType: 2
+  duration: 3
+  value: 10
+  secondaryValue: 3
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Arm_Range_Size_Buff
+  m_EditorClassIdentifier:
+  buffID: 1002
+  buffName: Virus Arm Range Size
+  buffType: 5
+  description: Increases attack range and enlarges player size.
+  statModifiers: []
+  triggerType: 0
+  duration: 9999
+  value: 20
+  secondaryValue: 10
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Foot_Speed_Trail_Buff
+  m_EditorClassIdentifier:
+  buffID: 1003
+  buffName: Virus Foot Speed Trail
+  buffType: 2
+  description: Increases movement speed and leaves a poison trail.
+  statModifiers:
+  - statType: 2
+    mode: 1
+    value: 15
+  triggerType: 0
+  duration: 9999
+  value: 15
+  secondaryValue: 3
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Core_Chest_Resistance_Buff
+  m_EditorClassIdentifier:
+  buffID: 1004
+  buffName: Virus Core Chest Resistance
+  buffType: 8
+  description: Core torso replaces the player's torso, slightly increases HP, and scales damage and negative effect resistance by general virus part count.
+  statModifiers:
+  - statType: 0
+    mode: 1
+    value: 10
+  triggerType: 0
+  duration: 9999
+  value: 10
+  secondaryValue: 10
+  stackable: 0
+  maxStack: 1
+  scalingSource: 1
+  valuePerStack: 5
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Link_2_Attack_Buff
+  m_EditorClassIdentifier:
+  buffID: 1005
+  buffName: Virus Link 2 Attack
+  buffType: 4
+  description: Virus set link at 2 parts grants 10% attack. If arm and foot parts are both equipped, this effect doubles.
+  statModifiers:
+  - statType: 1
+    mode: 1
+    value: 10
+  triggerType: 6
+  duration: 9999
+  value: 10
+  secondaryValue: 2
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 2
+  requiresArmAndLeg: 1
+--- !u!114 &11400005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Virus_Link_3_Attack_Buff
+  m_EditorClassIdentifier:
+  buffID: 1006
+  buffName: Virus Link 3 Attack
+  buffType: 4
+  description: Virus set link at 3 parts grants 20% attack. If arm and foot parts are both equipped, this effect doubles.
+  statModifiers:
+  - statType: 1
+    mode: 1
+    value: 20
+  triggerType: 6
+  duration: 9999
+  value: 20
+  secondaryValue: 2
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 3
+  requiresArmAndLeg: 1
+--- !u!114 &11400006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Head_AttackSpeed_Attack_Buff
+  m_EditorClassIdentifier:
+  buffID: 2001
+  buffName: Time Head Attack Speed Attack
+  buffType: 6
+  description: Increases attack speed and attack power.
+  statModifiers:
+  - statType: 4
+    mode: 1
+    value: 15
+  - statType: 1
+    mode: 1
+    value: 10
+  triggerType: 0
+  duration: 9999
+  value: 15
+  secondaryValue: 10
+  stackable: 1
+  maxStack: 3
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Arm_Range_Buff
+  m_EditorClassIdentifier:
+  buffID: 2002
+  buffName: Time Arm Range
+  buffType: 5
+  description: Increases attack range.
+  statModifiers: []
+  triggerType: 0
+  duration: 9999
+  value: 20
+  secondaryValue: 0
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Foot_Speed_Buff
+  m_EditorClassIdentifier:
+  buffID: 2003
+  buffName: Time Foot Speed
+  buffType: 2
+  description: Increases movement speed.
+  statModifiers:
+  - statType: 2
+    mode: 1
+    value: 15
+  triggerType: 0
+  duration: 9999
+  value: 15
+  secondaryValue: 0
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Core_Chest_ZoneResistance_Buff
+  m_EditorClassIdentifier:
+  buffID: 2004
+  buffName: Time Core Chest Zone Resistance
+  buffType: 10
+  description: Core torso reduces shrinking zone damage. Resistance scales with time head part count.
+  statModifiers: []
+  triggerType: 5
+  duration: 9999
+  value: 10
+  secondaryValue: 0
+  stackable: 0
+  maxStack: 1
+  scalingSource: 2
+  valuePerStack: 10
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Link_2_DodgeDistance_Buff
+  m_EditorClassIdentifier:
+  buffID: 2005
+  buffName: Time Link 2 Dodge Distance
+  buffType: 13
+  description: Time set link at 2 parts multiplies dodge distance by 1.5.
+  statModifiers: []
+  triggerType: 6
+  duration: 9999
+  value: 1.5
+  secondaryValue: 0
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 2
+  requiresArmAndLeg: 0
+--- !u!114 &11400011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Time_Link_3_DodgeIFrame_Buff
+  m_EditorClassIdentifier:
+  buffID: 2006
+  buffName: Time Link 3 Dodge IFrame
+  buffType: 14
+  description: Time set link at 3 parts grants invincible frames during dodge.
+  statModifiers: []
+  triggerType: 6
+  duration: 9999
+  value: 0.3
+  secondaryValue: 0
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 3
+  requiresArmAndLeg: 0
+--- !u!114 &11400012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Hat_Defense_Buff
+  m_EditorClassIdentifier:
+  buffID: 3001
+  buffName: Anxiety Hat Defense
+  buffType: 3
+  description: Increases defense.
+  statModifiers:
+  - statType: 3
+    mode: 1
+    value: 15
+  triggerType: 0
+  duration: 9999
+  value: 15
+  secondaryValue: 0
+  stackable: 1
+  maxStack: 3
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Arm_Range_Buff
+  m_EditorClassIdentifier:
+  buffID: 3002
+  buffName: Anxiety Arm Range
+  buffType: 5
+  description: Increases attack range.
+  statModifiers: []
+  triggerType: 0
+  duration: 9999
+  value: 20
+  secondaryValue: 0
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Foot_Speed_Buff
+  m_EditorClassIdentifier:
+  buffID: 3003
+  buffName: Anxiety Foot Speed
+  buffType: 2
+  description: Increases movement speed.
+  statModifiers:
+  - statType: 2
+    mode: 1
+    value: 15
+  triggerType: 0
+  duration: 9999
+  value: 15
+  secondaryValue: 0
+  stackable: 1
+  maxStack: 2
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Core_Mask_Fear_Attack_Buff
+  m_EditorClassIdentifier:
+  buffID: 3004
+  buffName: Anxiety Core Mask Fear Attack
+  buffType: 12
+  description: Attack has fear chance equal to mask count times 20%, and attack power increases.
+  statModifiers:
+  - statType: 1
+    mode: 1
+    value: 10
+  triggerType: 2
+  duration: 2
+  value: 20
+  secondaryValue: 10
+  stackable: 1
+  maxStack: 5
+  scalingSource: 3
+  valuePerStack: 20
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Core_Body_DamageToAttack_Buff
+  m_EditorClassIdentifier:
+  buffID: 3005
+  buffName: Anxiety Core Body Damage To Attack
+  buffType: 17
+  description: Automatically absorbs part of incoming damage and converts it into an attack buff. Stronger while fighting alone. If multiple torsos exist, only one should be active.
+  statModifiers: []
+  triggerType: 3
+  duration: 5
+  value: 20
+  secondaryValue: 10
+  stackable: 0
+  maxStack: 1
+  scalingSource: 6
+  valuePerStack: 10
+  requiredPartCount: 0
+  requiresArmAndLeg: 0
+--- !u!114 &11400017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Link_2_FearMark_Buff
+  m_EditorClassIdentifier:
+  buffID: 3006
+  buffName: Anxiety Link 2 Fear Mark
+  buffType: 15
+  description: Anxiety set link at 2 parts applies one fear mark on attack. The next hit against a marked enemy gains 10% damage.
+  statModifiers: []
+  triggerType: 6
+  duration: 9999
+  value: 10
+  secondaryValue: 0
+  stackable: 0
+  maxStack: 1
+  scalingSource: 0
+  valuePerStack: 0
+  requiredPartCount: 2
+  requiresArmAndLeg: 0
+--- !u!114 &11400018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e70f512917a64442aa2aa23463442ae, type: 3}
+  m_Name: Anxiety_Link_3_SelfDamageTrueDamage_Buff
+  m_EditorClassIdentifier:
+  buffID: 3007
+  buffName: Anxiety Link 3 Self Damage True Damage
+  buffType: 16
+  description: Anxiety set link at 3 parts makes the next hit against a marked enemy add true damage equal to 5% of self damaged HP.
+  statModifiers: []
+  triggerType: 6
+  duration: 9999
+  value: 5
+  secondaryValue: 0
+  stackable: 0
+  maxStack: 1
+  scalingSource: 5
+  valuePerStack: 0
+  requiredPartCount: 3
+  requiresArmAndLeg: 0

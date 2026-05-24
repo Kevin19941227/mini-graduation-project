@@ -7,7 +7,42 @@ public enum BuffType
     Slow,
     SpeedUp,
     DefenseUp,
-    AttackUp
+    AttackUp,
+    AttackRangeUp,
+    AttackSpeedUp,
+    SizeUp,
+    DamageResistanceUp,
+    NegativeEffectResistanceUp,
+    ZoneDamageResistanceUp,
+    PoisonTrail,
+    Fear,
+    DodgeDistanceUp,
+    DodgeInvincibleFrame,
+    FearMark,
+    SelfDamageTrueDamage,
+    DamageToAttackConversion
+}
+
+public enum BuffTriggerType
+{
+    Passive,
+    OnAttack,
+    OnHit,
+    OnDamageTaken,
+    OnDodge,
+    OnZoneDamage,
+    LinkSet
+}
+
+public enum BuffScalingSource
+{
+    None,
+    GeneralPartCount,
+    HeadPartCount,
+    MaskCount,
+    RelatedPartCount,
+    SelfMissingHP,
+    SoloPlay
 }
 
 [CreateAssetMenu(fileName = "BuffData", menuName = "GameData/Buff Data")]
@@ -17,16 +52,29 @@ public class BuffData : ScriptableObject
     public int buffID;
     public string buffName;
     public BuffType buffType;
+    [TextArea]
+    public string description;
 
     [Header("Stat Modifiers")]
     public List<StatModifier> statModifiers = new List<StatModifier>();
 
     [Header("Effect")]
+    public BuffTriggerType triggerType = BuffTriggerType.Passive;
     public float duration = 5f;
     public float value = 1f;
+    public float secondaryValue;
     public bool stackable = false;
     public int maxStack = 1;
 
+    [Header("Scaling")]
+    public BuffScalingSource scalingSource = BuffScalingSource.None;
+    public float valuePerStack;
+    public int requiredPartCount;
+    public bool requiresArmAndLeg;
+
+    /// <summary>
+    /// Adds this buff's stat modifiers to the given target list.
+    /// </summary>
     public void AppendStatModifiers(List<StatModifier> target)
     {
         if (target == null)
@@ -57,6 +105,10 @@ public class BuffData : ScriptableObject
 
             case BuffType.AttackUp:
                 target.Add(new StatModifier(StatType.Attack, value));
+                break;
+
+            case BuffType.AttackSpeedUp:
+                target.Add(new StatModifier(StatType.AttackSpeed, value));
                 break;
 
             case BuffType.Slow:

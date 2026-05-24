@@ -1744,7 +1744,7 @@ MonoBehaviour:
   headlessStartMode: 0
   editorAutoStart: 0
   sendRate: 60
-  offlineScene: Assets/_Scenes/SampleScene.unity
+  offlineScene: 
   onlineScene: Assets/_Scenes/RoomScene.unity
   offlineSceneLoadDelay: 0
   transport: {fileID: 0}
@@ -1753,12 +1753,12 @@ MonoBehaviour:
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
   authenticator: {fileID: 0}
-  playerPrefab: {fileID: 4431651567974146773, guid: 895f1f39a3b8f7c418540b58fee27d4b,
+  playerPrefab: {fileID: 3626582003054039218, guid: 30a9aa5eac85dd24db97bf4532034cd8,
     type: 3}
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
-  exceptionsDisconnect: 1
+  exceptionsDisconnect: 0
   snapshotSettings:
     bufferTimeMultiplier: 2
     bufferLimit: 32

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,7 +38,13 @@ public class BackpackUIController : MonoBehaviour
     [SerializeField] private LayerMask placementMask = ~0;
     [SerializeField] private float placementRayDistance = 100f;
     [SerializeField] private float fallbackPlacementDistance = 3f;
+    [SerializeField] private float minPlacementDistance = 0.5f;
+    [SerializeField] private float maxPlacementDistance = 12f;
+    [SerializeField] private float placementDistanceScrollSpeed = 1f;
+    [SerializeField] private float placementProbeRadius = 2f;
     [SerializeField] private float placementRotationSpeed = 120f;
+    [SerializeField] private bool requireMeshColliderAttachSurface = true;
+    [SerializeField] private bool disableLocalPlayerCapsuleCollidersWhileOpen = true;
 
     [Header("Database")]
     [SerializeField] private GameDatabase gameDatabase;
@@ -53,8 +59,12 @@ public class BackpackUIController : MonoBehaviour
     private Vector2 lastPointerScreenPosition;
 
     private GameObject dragPreviewInstance;
-    private float dragPreviewYawOffset;
+    private Vector3 dragPreviewRotationOffset;
+    private float dragPreviewDistance;
+    private PartAttachSurface currentAttachSurface;
+    private bool isDraggingBackpackPreview;
     private readonly List<BackpackSlotUI> slotUIs = new List<BackpackSlotUI>();
+    private readonly List<CapsuleCollider> disabledLocalCapsuleColliders = new List<CapsuleCollider>();
 
     #endregion
 
@@ -64,6 +74,11 @@ public class BackpackUIController : MonoBehaviour
     {
         ApplyPanelRuntimeStyle();
         DisableDetailPanel();
+
+        if (equipButton != null)
+        {
+            equipButton.onClick.AddListener(HandleEquipClicked);
+        }
     }
 
     private void LateUpdate()
@@ -72,10 +87,20 @@ public class BackpackUIController : MonoBehaviour
         {
             UnlockCursorForBackpack();
         }
+
+        if (isDraggingBackpackPreview && dragPreviewInstance != null)
+        {
+            MoveDragPreview(lastPointerScreenPosition);
+        }
     }
 
     private void OnDestroy()
     {
+        if (equipButton != null)
+        {
+            equipButton.onClick.RemoveListener(HandleEquipClicked);
+        }
+
         UnbindInventory();
         ClearDragPreview();
     }
@@ -84,6 +109,9 @@ public class BackpackUIController : MonoBehaviour
 
     #region Public Methods
 
+    /// <summary>
+    /// Binds the inventory data shown by this backpack UI.
+    /// </summary>
     public void Bind(PlayerInventoryNetwork inventory)
     {
         if (localInventory == inventory)
@@ -95,14 +123,20 @@ public class BackpackUIController : MonoBehaviour
         UnbindInventory();
         localInventory = inventory;
 
-        if (localInventory != null)
+        if (localInventory == null)
         {
-            localInventory.OnInventoryChanged += RefreshUI;
+            ClearInventoryView();
+            return;
         }
+
+        localInventory.OnInventoryChanged += RefreshUI;
 
         RefreshUI();
     }
 
+    /// <summary>
+    /// Opens the backpack UI.
+    /// </summary>
     public void Show()
     {
         if (panelRoot != null)
@@ -111,10 +145,15 @@ public class BackpackUIController : MonoBehaviour
         }
 
         UnlockCursorForBackpack();
+        DisableLocalPlayerCapsuleColliders();
         SwitchToAssemblyCamera();
         RefreshUI();
+        DebugLocalPlayerMeshColliders();
     }
 
+    /// <summary>
+    /// Closes the backpack UI.
+    /// </summary>
     public void Hide()
     {
         if (panelRoot != null)
@@ -122,10 +161,16 @@ public class BackpackUIController : MonoBehaviour
             panelRoot.SetActive(false);
         }
 
+        HideDetailPanel();
+        isDraggingBackpackPreview = false;
         ClearDragPreview();
+        RestoreLocalPlayerCapsuleColliders();
         SwitchToGameplayCamera();
     }
 
+    /// <summary>
+    /// Toggles the backpack UI.
+    /// </summary>
     public void Toggle()
     {
         if (panelRoot == null)
@@ -143,6 +188,9 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Checks whether a screen position is inside the backpack panel.
+    /// </summary>
     public bool IsScreenPositionOverBackpack(Vector2 screenPosition)
     {
         if (panelRoot == null || !panelRoot.activeInHierarchy)
@@ -168,11 +216,17 @@ public class BackpackUIController : MonoBehaviour
         return RectTransformUtility.RectangleContainsScreenPoint(panelRect, screenPosition, uiCamera);
     }
 
+    /// <summary>
+    /// Returns whether the backpack UI is currently open.
+    /// </summary>
     public bool IsBackpackOpen()
     {
         return panelRoot != null && panelRoot.activeInHierarchy;
     }
 
+    /// <summary>
+    /// Returns whether the player is dragging an install preview.
+    /// </summary>
     public bool IsDraggingInstallPreview()
     {
         return dragPreviewInstance != null;
@@ -182,6 +236,9 @@ public class BackpackUIController : MonoBehaviour
 
     #region UI Refresh
 
+    /// <summary>
+    /// Refreshes slots from the currently bound inventory.
+    /// </summary>
     public void RefreshUI()
     {
         if (localInventory == null || gameDatabase == null || slotPrefab == null || slotGridRoot == null)
@@ -231,6 +288,7 @@ public class BackpackUIController : MonoBehaviour
         if (selectedPartData != null && !localInventory.ClientHasPart(selectedPartData.partID, 1))
         {
             ClearSelection();
+            ClearDetailPanel();
         }
     }
 
@@ -243,6 +301,17 @@ public class BackpackUIController : MonoBehaviour
         }
     }
 
+    private void ClearInventoryView()
+    {
+        for (int i = 0; i < slotUIs.Count; i++)
+        {
+            slotUIs[i].Clear();
+        }
+
+        ClearDetailPanel();
+        ClearDragPreview();
+    }
+
     #endregion
 
     #region Slot Events
@@ -250,6 +319,9 @@ public class BackpackUIController : MonoBehaviour
     private void HandleSlotClicked(StoredPartRuntimeData slotData, PartData partData)
     {
         SelectPart(slotData, partData);
+        ShowDetailPanel();
+        RefreshDetailPanel();
+        MoveDetailPanelToScreenPosition(lastPointerScreenPosition);
     }
 
     private void HandleSlotHovered(StoredPartRuntimeData slotData, PartData partData, Vector2 screenPosition)
@@ -270,19 +342,21 @@ public class BackpackUIController : MonoBehaviour
     {
         lastPointerScreenPosition = screenPosition;
         SelectPart(slotData, partData);
+        HideDetailPanel();
+        isDraggingBackpackPreview = true;
         BeginDragPreview(partData, screenPosition);
     }
 
     private void HandleSlotDrag(Vector2 screenPosition)
     {
         lastPointerScreenPosition = screenPosition;
-        MoveDragPreview(screenPosition);
     }
 
     private void HandleSlotEndDrag(Vector2 screenPosition)
     {
         lastPointerScreenPosition = screenPosition;
         FinishDragInstall(screenPosition);
+        isDraggingBackpackPreview = false;
     }
 
     private void SelectPart(StoredPartRuntimeData slotData, PartData partData)
@@ -540,15 +614,18 @@ public class BackpackUIController : MonoBehaviour
             return;
         }
 
-        if (!TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
+        dragPreviewRotationOffset = Vector3.zero;
+        dragPreviewDistance = Mathf.Clamp(fallbackPlacementDistance, minPlacementDistance, maxPlacementDistance);
+
+        if (!TryGetPlacementPose(partData, screenPosition, false, out Vector3 worldPosition, out Quaternion worldRotation))
         {
             return;
         }
 
-        dragPreviewYawOffset = 0f;
         dragPreviewInstance = Instantiate(partData.partPrefab, worldPosition, worldRotation);
         dragPreviewInstance.name = partData.partPrefab.name + " Preview";
-        SetPreviewInteraction(dragPreviewInstance, false);
+        EnsureMeshAttachColliders(dragPreviewInstance, true);
+        SetPartCollidersForInstallMode(dragPreviewInstance);
     }
 
     private void MoveDragPreview(Vector2 screenPosition)
@@ -560,7 +637,7 @@ public class BackpackUIController : MonoBehaviour
 
         UpdateDragPreviewRotationInput();
 
-        if (!TryGetPlacementPose(screenPosition, out Vector3 worldPosition, out Quaternion worldRotation))
+        if (!TryGetPlacementPose(selectedPartData, screenPosition, false, out Vector3 worldPosition, out Quaternion worldRotation))
         {
             return;
         }
@@ -579,14 +656,25 @@ public class BackpackUIController : MonoBehaviour
             return false;
         }
 
-        if (!TryRequestInstallSelected())
+        if (!TryGetPlacementPose(installedPartData, screenPosition, true, out Vector3 worldPosition, out Quaternion worldRotation))
+        {
+            ClearDragPreview();
+            return false;
+        }
+
+        dragPreviewInstance.transform.SetPositionAndRotation(worldPosition, worldRotation);
+
+        if (!TryRequestInstallSelected(currentAttachSurface))
         {
             ClearDragPreview();
             return false;
         }
 
         dragPreviewInstance.name = installedPartData != null ? installedPartData.partName : dragPreviewInstance.name;
-        SetPreviewInteraction(dragPreviewInstance, true);
+        AttachInstalledPartToSurface(dragPreviewInstance, currentAttachSurface);
+        EnsureMeshAttachColliders(dragPreviewInstance, true);
+        SetPartCollidersForInstallMode(dragPreviewInstance);
+        EnsureAttachSurface(dragPreviewInstance, installedPartData);
         InitializePlacedPartDragHandler(dragPreviewInstance, installedPartData);
         dragPreviewInstance = null;
         return true;
@@ -610,7 +698,12 @@ public class BackpackUIController : MonoBehaviour
         return FinishDragInstall(screenPosition);
     }
 
-    private bool TryGetPlacementPose(Vector2 screenPosition, out Vector3 worldPosition, out Quaternion worldRotation)
+    private bool TryGetPlacementPose(
+        PartData partData,
+        Vector2 screenPosition,
+        bool requireAttachTarget,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
     {
         Camera cameraToUse = placementCamera != null ? placementCamera : Camera.main;
 
@@ -622,36 +715,37 @@ public class BackpackUIController : MonoBehaviour
         }
 
         Ray ray = cameraToUse.ScreenPointToRay(screenPosition);
+        Vector3 freeWorldPosition = ray.GetPoint(dragPreviewDistance);
 
-        if (Physics.Raycast(ray, out RaycastHit hit, placementRayDistance, placementMask))
+        if (TryGetAttachPoseFromPartCenter(
+            freeWorldPosition,
+            partData,
+            out PartAttachSurface attachSurface,
+            cameraToUse.transform.forward,
+            out worldPosition,
+            out worldRotation))
         {
-            worldPosition = hit.point;
-            worldRotation = BuildPlacementRotation(cameraToUse.transform.forward, hit.normal);
+            currentAttachSurface = attachSurface;
             return true;
         }
 
-        worldPosition = ray.GetPoint(fallbackPlacementDistance);
-        worldRotation = Quaternion.Euler(0f, dragPreviewYawOffset, 0f);
+        currentAttachSurface = null;
+
+        if (requireAttachTarget)
+        {
+            worldPosition = Vector3.zero;
+            worldRotation = Quaternion.identity;
+            return false;
+        }
+
+        worldPosition = freeWorldPosition;
+        worldRotation = Quaternion.Euler(dragPreviewRotationOffset);
         return true;
     }
 
-    private Quaternion BuildPlacementRotation(Vector3 cameraForward, Vector3 surfaceNormal)
+    private bool TryRequestInstallSelected(PartAttachSurface attachSurface)
     {
-        Vector3 forwardOnSurface = Vector3.ProjectOnPlane(cameraForward, surfaceNormal);
-
-        if (forwardOnSurface.sqrMagnitude < 0.0001f)
-        {
-            forwardOnSurface = Vector3.ProjectOnPlane(Vector3.forward, surfaceNormal);
-        }
-
-        Quaternion surfaceRotation = Quaternion.LookRotation(forwardOnSurface.normalized, surfaceNormal);
-        Quaternion yawRotation = Quaternion.AngleAxis(dragPreviewYawOffset, surfaceNormal);
-        return yawRotation * surfaceRotation;
-    }
-
-    private bool TryRequestInstallSelected()
-    {
-        if (localInventory == null || selectedPartData == null || selectedSlotData.IsEmpty)
+        if (localInventory == null || selectedPartData == null || selectedSlotData.IsEmpty || attachSurface == null)
         {
             return false;
         }
@@ -661,13 +755,18 @@ public class BackpackUIController : MonoBehaviour
             return false;
         }
 
-        Vector3 installedPosition = dragPreviewInstance != null ? dragPreviewInstance.transform.localPosition : Vector3.zero;
-        Vector3 installedEulerAngles = dragPreviewInstance != null ? dragPreviewInstance.transform.localEulerAngles : Vector3.zero;
+        Transform attachRoot = attachSurface.AttachRoot;
+        Vector3 installedPosition = attachRoot != null && dragPreviewInstance != null
+            ? attachRoot.InverseTransformPoint(dragPreviewInstance.transform.position)
+            : Vector3.zero;
+        Vector3 installedEulerAngles = attachRoot != null && dragPreviewInstance != null
+            ? (Quaternion.Inverse(attachRoot.rotation) * dragPreviewInstance.transform.rotation).eulerAngles
+            : Vector3.zero;
         Vector3 installedScale = dragPreviewInstance != null ? dragPreviewInstance.transform.localScale : Vector3.one;
 
         localInventory.CmdInstallPartFromBackpack(
             selectedPartData.partID,
-            selectedPartData.partType.ToString(),
+            attachSurface.AttachPointID,
             installedPosition,
             installedEulerAngles,
             installedScale
@@ -676,7 +775,196 @@ public class BackpackUIController : MonoBehaviour
         return true;
     }
 
-    private void SetPreviewInteraction(GameObject target, bool enabled)
+    private bool TryGetAttachPoseFromPartCenter(
+        Vector3 partCenter,
+        PartData partData,
+        out PartAttachSurface attachSurface,
+        Vector3 cameraForward,
+        out Vector3 worldPosition,
+        out Quaternion worldRotation)
+    {
+        float nearestDistance = float.PositiveInfinity;
+        attachSurface = null;
+        Collider nearestCollider = null;
+        worldPosition = Vector3.zero;
+        worldRotation = Quaternion.identity;
+
+        if (placementProbeRadius <= 0f)
+        {
+            return false;
+        }
+
+        Collider[] colliders = Physics.OverlapSphere(
+            partCenter,
+            placementProbeRadius,
+            placementMask,
+            QueryTriggerInteraction.Collide
+        );
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider hitCollider = colliders[i];
+
+            if (IsIgnoredAttachCollider(hitCollider))
+            {
+                continue;
+            }
+
+            if (requireMeshColliderAttachSurface && hitCollider.GetComponent<MeshCollider>() == null)
+            {
+                continue;
+            }
+
+            PartAttachSurface surface = hitCollider.GetComponentInParent<PartAttachSurface>();
+
+            if (surface == null || !surface.CanAttach(partData))
+            {
+                continue;
+            }
+
+            Vector3 closestPoint = hitCollider.ClosestPoint(partCenter);
+            float sqrDistance = (partCenter - closestPoint).sqrMagnitude;
+
+            if (sqrDistance >= nearestDistance)
+            {
+                continue;
+            }
+
+            nearestDistance = sqrDistance;
+            attachSurface = surface;
+            nearestCollider = hitCollider;
+        }
+
+        if (attachSurface == null || nearestCollider == null)
+        {
+            return false;
+        }
+
+        attachSurface.BuildAttachPoseFromCenter(
+            nearestCollider,
+            partCenter,
+            cameraForward,
+            dragPreviewRotationOffset,
+            out worldPosition,
+            out worldRotation
+        );
+        return true;
+    }
+
+    private bool IsDragPreviewCollider(Collider hitCollider)
+    {
+        return dragPreviewInstance != null && hitCollider.transform.IsChildOf(dragPreviewInstance.transform);
+    }
+
+    private bool IsIgnoredAttachCollider(Collider hitCollider)
+    {
+        return hitCollider == null
+            || hitCollider is CapsuleCollider
+            || IsDragPreviewCollider(hitCollider);
+    }
+
+    private void AttachInstalledPartToSurface(GameObject installedPart, PartAttachSurface attachSurface)
+    {
+        if (installedPart == null || attachSurface == null)
+        {
+            return;
+        }
+
+        Transform attachRoot = attachSurface.AttachRoot;
+
+        if (attachRoot == null)
+        {
+            return;
+        }
+
+        Transform attachPoint = CreateRuntimeAttachPoint(attachRoot, installedPart.transform);
+        installedPart.transform.SetParent(attachPoint, true);
+        installedPart.transform.localPosition = Vector3.zero;
+        installedPart.transform.localRotation = Quaternion.identity;
+    }
+
+    private Transform CreateRuntimeAttachPoint(Transform attachRoot, Transform installedPart)
+    {
+        GameObject attachPointObject = new GameObject(installedPart.name + " AttachPoint");
+        Transform attachPoint = attachPointObject.transform;
+        attachPoint.SetParent(attachRoot, false);
+        attachPoint.SetPositionAndRotation(installedPart.position, installedPart.rotation);
+        attachPoint.localScale = Vector3.one;
+        return attachPoint;
+    }
+
+    private void EnsureAttachSurface(GameObject installedPart, PartData partData)
+    {
+        if (installedPart == null || partData == null)
+        {
+            return;
+        }
+
+        PartAttachSurface attachSurface = installedPart.GetComponent<PartAttachSurface>();
+
+        if (attachSurface == null)
+        {
+            installedPart.AddComponent<PartAttachSurface>();
+        }
+    }
+
+    private void EnsureMeshAttachColliders(GameObject target, bool enabled)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        MeshFilter[] meshFilters = target.GetComponentsInChildren<MeshFilter>();
+
+        for (int i = 0; i < meshFilters.Length; i++)
+        {
+            MeshFilter meshFilter = meshFilters[i];
+
+            if (meshFilter == null || meshFilter.sharedMesh == null)
+            {
+                continue;
+            }
+
+            MeshCollider meshCollider = meshFilter.GetComponent<MeshCollider>();
+
+            if (meshCollider == null)
+            {
+                meshCollider = meshFilter.gameObject.AddComponent<MeshCollider>();
+            }
+
+            meshCollider.sharedMesh = meshFilter.sharedMesh;
+            meshCollider.convex = true;
+            meshCollider.isTrigger = true;
+            meshCollider.enabled = enabled;
+        }
+
+        SkinnedMeshRenderer[] skinnedMeshRenderers = target.GetComponentsInChildren<SkinnedMeshRenderer>();
+
+        for (int i = 0; i < skinnedMeshRenderers.Length; i++)
+        {
+            SkinnedMeshRenderer skinnedMeshRenderer = skinnedMeshRenderers[i];
+
+            if (skinnedMeshRenderer == null || skinnedMeshRenderer.sharedMesh == null)
+            {
+                continue;
+            }
+
+            MeshCollider meshCollider = skinnedMeshRenderer.GetComponent<MeshCollider>();
+
+            if (meshCollider == null)
+            {
+                meshCollider = skinnedMeshRenderer.gameObject.AddComponent<MeshCollider>();
+            }
+
+            meshCollider.sharedMesh = skinnedMeshRenderer.sharedMesh;
+            meshCollider.convex = true;
+            meshCollider.isTrigger = true;
+            meshCollider.enabled = enabled;
+        }
+    }
+
+    private void SetPartCollidersForInstallMode(GameObject target)
     {
         if (target == null)
         {
@@ -686,13 +974,14 @@ public class BackpackUIController : MonoBehaviour
         Collider[] colliders = target.GetComponentsInChildren<Collider>();
         for (int i = 0; i < colliders.Length; i++)
         {
-            colliders[i].enabled = enabled;
+            colliders[i].enabled = true;
+            colliders[i].isTrigger = true;
         }
 
         Rigidbody[] rigidbodies = target.GetComponentsInChildren<Rigidbody>();
         for (int i = 0; i < rigidbodies.Length; i++)
         {
-            rigidbodies[i].isKinematic = !enabled;
+            rigidbodies[i].isKinematic = true;
         }
     }
 
@@ -728,8 +1017,11 @@ public class BackpackUIController : MonoBehaviour
             placementCamera,
             placementMask,
             placementRayDistance,
-            fallbackPlacementDistance,
-            placementRotationSpeed
+            placementProbeRadius,
+            placementRotationSpeed,
+            minPlacementDistance,
+            maxPlacementDistance,
+            placementDistanceScrollSpeed
         );
     }
 
@@ -755,6 +1047,8 @@ public class BackpackUIController : MonoBehaviour
 
     private void UnbindInventory()
     {
+        RestoreLocalPlayerCapsuleColliders();
+
         if (localInventory == null)
         {
             return;
@@ -764,30 +1058,102 @@ public class BackpackUIController : MonoBehaviour
         localInventory = null;
     }
 
+    private void DisableLocalPlayerCapsuleColliders()
+    {
+        if (!disableLocalPlayerCapsuleCollidersWhileOpen || localInventory == null)
+        {
+            return;
+        }
+
+        RestoreLocalPlayerCapsuleColliders();
+
+        CapsuleCollider[] capsuleColliders = localInventory.GetComponentsInChildren<CapsuleCollider>();
+
+        for (int i = 0; i < capsuleColliders.Length; i++)
+        {
+            CapsuleCollider capsuleCollider = capsuleColliders[i];
+
+            if (capsuleCollider == null || !capsuleCollider.enabled)
+            {
+                continue;
+            }
+
+            capsuleCollider.enabled = false;
+            disabledLocalCapsuleColliders.Add(capsuleCollider);
+        }
+    }
+
+    private void RestoreLocalPlayerCapsuleColliders()
+    {
+        for (int i = 0; i < disabledLocalCapsuleColliders.Count; i++)
+        {
+            CapsuleCollider capsuleCollider = disabledLocalCapsuleColliders[i];
+
+            if (capsuleCollider != null)
+            {
+                capsuleCollider.enabled = true;
+            }
+        }
+
+        disabledLocalCapsuleColliders.Clear();
+    }
+
     private void UpdateDragPreviewRotationInput()
     {
-        float direction = 0f;
+        UpdateDragPreviewDistanceInput();
+
+        Vector3 direction = Vector3.zero;
 
         if (Input.GetKey(KeyCode.Q))
         {
-            direction -= 1f;
+            direction.x -= 1f;
         }
 
         if (Input.GetKey(KeyCode.E))
         {
-            direction += 1f;
+            direction.x += 1f;
         }
 
+        if (Input.GetKey(KeyCode.Alpha1))
+        {
+            direction.y -= 1f;
+        }
+
+        if (Input.GetKey(KeyCode.Alpha2))
+        {
+            direction.y += 1f;
+        }
+
+        if (Input.GetKey(KeyCode.Alpha3))
+        {
+            direction.z -= 1f;
+        }
+
+        if (Input.GetKey(KeyCode.Alpha4))
+        {
+            direction.z += 1f;
+        }
+
+        if (direction.sqrMagnitude > 0f)
+        {
+            dragPreviewRotationOffset += direction * placementRotationSpeed * Time.deltaTime;
+        }
+    }
+
+    private void UpdateDragPreviewDistanceInput()
+    {
         float scroll = Input.mouseScrollDelta.y;
-        if (!Mathf.Approximately(scroll, 0f))
+
+        if (Mathf.Approximately(scroll, 0f))
         {
-            direction += scroll;
+            return;
         }
 
-        if (!Mathf.Approximately(direction, 0f))
-        {
-            dragPreviewYawOffset += direction * placementRotationSpeed * Time.deltaTime;
-        }
+        dragPreviewDistance = Mathf.Clamp(
+            dragPreviewDistance + scroll * placementDistanceScrollSpeed,
+            minPlacementDistance,
+            maxPlacementDistance
+        );
     }
 
     private void UnlockCursorForBackpack()
@@ -813,4 +1179,37 @@ public class BackpackUIController : MonoBehaviour
     }
 
     #endregion
+
+
+    /// <summary>
+/// Logs all MeshColliders under the local player for attach debugging.
+/// </summary>
+public void DebugLocalPlayerMeshColliders()
+{
+    if (localInventory == null)
+    {
+        Debug.LogWarning("[AttachDebug] localInventory is null.");
+        return;
+    }
+
+    MeshCollider[] meshColliders = localInventory.GetComponentsInChildren<MeshCollider>(true);
+
+    Debug.Log($"[AttachDebug] MeshCollider count: {meshColliders.Length}");
+
+    for (int i = 0; i < meshColliders.Length; i++)
+    {
+        MeshCollider meshCollider = meshColliders[i];
+
+        Debug.Log(
+            $"[AttachDebug] {meshCollider.name} | " +
+            $"activeInHierarchy: {meshCollider.gameObject.activeInHierarchy} | " +
+            $"enabled: {meshCollider.enabled} | " +
+            $"isTrigger: {meshCollider.isTrigger} | " +
+            $"convex: {meshCollider.convex} | " +
+            $"layer: {LayerMask.LayerToName(meshCollider.gameObject.layer)} | " +
+            $"sharedMesh: {(meshCollider.sharedMesh != null ? meshCollider.sharedMesh.name : "NULL")} | " +
+            $"has PartAttachSurface parent: {meshCollider.GetComponentInParent<PartAttachSurface>() != null}"
+        );
+    }
+}
 }

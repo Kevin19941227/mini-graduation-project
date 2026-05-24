@@ -4,36 +4,27 @@ using Steamworks;
 using UnityEngine.InputSystem;
 using KinematicCharacterController;
 using Cinemachine;
+using System.Collections;
 
 public class PlayCol : NetworkBehaviour, ICharacterController
 {
-    // ===== 狀態枚舉 =====
     public enum PlayerPose
     {
-        Grounded,
-        Jump,
-        Fall,
-        Charging,   // 蓄力中（可移動）
-        Attack,     // 釋放攻擊（鎖定 + 位移）
-        Hit,
-        Die
+        Grounded, Jump, Fall, Charging, Attack, Hit, Die
     }
 
     public enum MoveState
     {
-        Idle,
-        Walk,
-        Run,
-        Stop
+        Idle, Walk, Run, Stop
     }
 
     [Header("UI")]
     [SerializeField] private TextMesh playerNameText;
+    [SerializeField] private PlayerHUD _hud;
 
     [SyncVar(hook = nameof(OnNameChanged))]
     private string playerName;
 
-    // ===== 動畫同步用 SyncVar =====
     [SyncVar(hook = nameof(OnSyncPoseChanged))]
     private PlayerPose _syncPose = PlayerPose.Grounded;
 
@@ -72,13 +63,26 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     [Header("重力設定")]
     public float gravity = -30f;
 
-    [Header("相機震動")]
-    public CinemachineImpulseSource impulseSource;
-
     [Header("蓄力攻擊設定")]
     public float maxChargeTime = 1.5f;
-    public float dashDistance = 3f;   // 衝刺總距離（單位：Unity units）
-    public float dashDuration = 0.2f; // 衝刺時間（秒），配合攻擊動畫長度調
+    public float dashDistance = 3f;
+    public float dashDuration = 0.2f;
+    public float chargeMoveSpeedMultiplier = 0.4f; // 蓄力時移動速度倍率
+
+    [Header("戰鬥設定")]
+    public float attackRadius = 1.5f;
+    public float attackRange = 1.2f;
+    public int attackDamage = 10;
+    public int maxHp = 100;
+
+    [Header("打擊感設定")]
+    public float hitStopDuration = 0.08f;
+    public float hitKnockbackTime = 0.15f;
+    public float cameraShakeStrength = 0.3f;
+    public CinemachineImpulseSource impulseSource;
+
+    [SyncVar(hook = nameof(OnHpChanged))]
+    private int _hp = 100;
 
     private Animator _animator;
     private KinematicCharacterMotor _motor;
@@ -99,20 +103,21 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     private MoveState _moveState = MoveState.Idle;
     private bool _canChangeState = true;
 
-    // 蓄力
     private bool _isCharging = false;
     private float _chargeStartTime = 0f;
     private float _chargeRatio = 0f;
 
-    // 位移
     private Vector3 _dashDirection = Vector3.zero;
     private float _dashTimer = 0f;
+    private bool _attackFired = false;
 
-    // 頻率控制
     private float _syncTimer = 0f;
     private const float SYNC_INTERVAL = 0.05f;
 
-    // ===== 初始化 =====
+    private bool _wasJumpRequested = false;
+    private float _jumpStartTime = -1f;
+    private const float MIN_JUMP_AIRTIME = 0.15f;
+
     void Awake()
     {
         _motor = GetComponent<KinematicCharacterMotor>();
@@ -129,6 +134,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             _playerInput.enabled = true;
             _motor.enabled = true;
             _mainCamera = Camera.main;
+            _hud?.Init(maxHp);
+            _hud?.UpdateHp(_hp, maxHp);
 
             if (NetworkClient.ready)
             {
@@ -145,7 +152,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         }
     }
 
-    // ===== 主更新迴圈 =====
     void Update()
     {
         if (!isLocalPlayer) return;
@@ -157,43 +163,67 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         SyncAnimationToServer();
     }
 
-    // ===== 讀取輸入 =====
     private void UpdateInput()
     {
         _isRunning = Keyboard.current.leftShiftKey.isPressed;
+
+        if (_isCharging && _currentPose == PlayerPose.Charging
+            && !Mouse.current.leftButton.isPressed)
+        {
+            _isCharging = false;
+            _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
+            _dashDirection = _moveDirection != Vector3.zero
+                ? _moveDirection.normalized
+                : transform.forward;
+            _dashTimer = dashDuration;
+            _attackFired = false;
+            ChangeState(PlayerPose.Attack);
+        }
     }
 
-    // ===== 大狀態判斷 =====
     private void UpdateState()
     {
         if (_currentPose == PlayerPose.Die) return;
         if (!_canChangeState) return;
 
+        if (_currentPose == PlayerPose.Jump && _verticalVelocity <= 0f
+            && Time.time - _jumpStartTime >= MIN_JUMP_AIRTIME)
+        {
+            ChangeState(PlayerPose.Fall);
+            return;
+        }
+
         if (_motor.GroundingStatus.IsStableOnGround)
         {
+            if (_wasJumpRequested)
+            {
+                _wasJumpRequested = false;
+                return;
+            }
+
             if (_currentPose == PlayerPose.Fall || _currentPose == PlayerPose.Jump)
                 ChangeState(PlayerPose.Grounded);
 
-            // Charging 時不呼叫 UpdateMoveState，避免打斷蓄力
+            if (_currentPose == PlayerPose.Charging && !_isCharging)
+                ChangeState(PlayerPose.Grounded);
+
             if (_currentPose != PlayerPose.Charging)
                 UpdateMoveState();
         }
         else
         {
-            // 蓄力中離地（掉下去）→ 中斷蓄力
             if (_currentPose == PlayerPose.Charging)
             {
                 _isCharging = false;
                 ChangeState(PlayerPose.Fall);
             }
-            else if (_currentPose != PlayerPose.Jump)
+            else if (_currentPose == PlayerPose.Grounded)
             {
                 ChangeState(PlayerPose.Fall);
             }
         }
     }
 
-    // ===== 小狀態判斷 =====
     private void UpdateMoveState()
     {
         MoveState previousState = _moveState;
@@ -228,14 +258,19 @@ public class PlayCol : NetworkBehaviour, ICharacterController
 
         _animator.SetBool("IsMoving", _moveInput != Vector2.zero);
         _animator.SetBool("IsRunning", _isRunning);
+
+        if (previousState != _moveState)
+        {
+            if (_moveState == MoveState.Idle)
+                _animator.CrossFadeInFixedTime("idle", 0.15f);
+            else if (_moveState == MoveState.Walk || _moveState == MoveState.Run)
+                _animator.CrossFadeInFixedTime("move", 0.15f);
+        }
     }
 
-    // ===== 移動方向與旋轉 =====
     private void UpdateMovement()
     {
         if (_currentPose == PlayerPose.Die || _currentPose == PlayerPose.Hit) return;
-
-        // Attack 鎖定期間不更新移動方向
         if (_currentPose == PlayerPose.Attack) return;
 
         if (_moveInput != Vector2.zero)
@@ -256,7 +291,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         }
     }
 
-    // ===== 動畫更新（本地） =====
     private void UpdateAnimation()
     {
         if (_currentPose == PlayerPose.Grounded || _currentPose == PlayerPose.Charging)
@@ -268,7 +302,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             {
                 _lastDirX = _moveInput.x;
                 _lastDirZ = _moveInput.y;
-
                 targetX = _moveInput.x;
                 targetZ = _moveInput.y;
 
@@ -285,19 +318,15 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             _animator.SetFloat("LastDirZ", _lastDirZ);
         }
 
-        // 蓄力進度（給 Animator blend 用，選用）
         if (_currentPose == PlayerPose.Charging)
         {
             _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
             _animator.SetFloat("ChargeRatio", _chargeRatio);
-
-            // 蓄力越久震動越強
-            if (impulseSource != null)
-                impulseSource.GenerateImpulse(_chargeRatio * 0.05f);
         }
+
+        _hud?.UpdateCharge(_chargeRatio, _isCharging);
     }
 
-    // ===== 定期把動畫狀態送給 Server =====
     private void SyncAnimationToServer()
     {
         _syncTimer += Time.deltaTime;
@@ -317,7 +346,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         );
     }
 
-    // ===== Command：Client → Server 送動畫狀態 =====
     [Command(requiresAuthority = true)]
     private void CmdSyncAnimState(
         PlayerPose pose,
@@ -326,18 +354,17 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         bool isMoving, bool isRunning, bool isStopping,
         float chargeRatio)
     {
-        _syncPose       = pose;
-        _syncSpeedX     = speedX;
-        _syncSpeedZ     = speedZ;
-        _syncLastDirX   = lastDirX;
-        _syncLastDirZ   = lastDirZ;
-        _syncIsMoving   = isMoving;
-        _syncIsRunning  = isRunning;
-        _syncIsStopping = isStopping;
+        _syncPose        = pose;
+        _syncSpeedX      = speedX;
+        _syncSpeedZ      = speedZ;
+        _syncLastDirX    = lastDirX;
+        _syncLastDirZ    = lastDirZ;
+        _syncIsMoving    = isMoving;
+        _syncIsRunning   = isRunning;
+        _syncIsStopping  = isStopping;
         _syncChargeRatio = chargeRatio;
     }
 
-    // ===== SyncVar Hooks =====
     private void OnSyncPoseChanged(PlayerPose oldPose, PlayerPose newPose)
     {
         if (isLocalPlayer) return;
@@ -392,36 +419,20 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         _animator.SetFloat("ChargeRatio", newVal);
     }
 
-    // ===== 依據 Pose 驅動其他人的動畫 =====
     private void ApplyPoseToAnimator(PlayerPose pose)
     {
         switch (pose)
         {
-            case PlayerPose.Grounded:
-                _animator.CrossFadeInFixedTime("move", 0.2f);
-                break;
-            case PlayerPose.Charging:
-                _animator.CrossFadeInFixedTime("Charging", 0.15f);
-                break;
-            case PlayerPose.Jump:
-                _animator.CrossFadeInFixedTime("Jump", 0.1f);
-                break;
-            case PlayerPose.Fall:
-                _animator.CrossFadeInFixedTime("Fall", 0.1f);
-                break;
-            case PlayerPose.Attack:
-                _animator.CrossFadeInFixedTime("攻擊", 0.05f);
-                break;
-            case PlayerPose.Hit:
-                _animator.CrossFadeInFixedTime("Hit", 0.1f);
-                break;
-            case PlayerPose.Die:
-                _animator.CrossFadeInFixedTime("Die", 0.1f);
-                break;
+            case PlayerPose.Grounded:  _animator.CrossFadeInFixedTime("idle",    0.2f);  break;
+            case PlayerPose.Charging:  _animator.CrossFadeInFixedTime("Charging",0.15f); break;
+            case PlayerPose.Jump:      _animator.CrossFadeInFixedTime("Jump",    0.1f);  break;
+            case PlayerPose.Fall:      _animator.CrossFadeInFixedTime("Fall",    0.1f);  break;
+            case PlayerPose.Attack:    _animator.CrossFadeInFixedTime("Attack",  0.05f); break;
+            case PlayerPose.Hit:       _animator.CrossFadeInFixedTime("hurt",    0.1f);  break;
+            case PlayerPose.Die:       _animator.CrossFadeInFixedTime("死亡",    0.1f);  break;
         }
     }
 
-    // ===== 狀態切換 =====
     private void ChangeState(PlayerPose newPose)
     {
         if (_currentPose == newPose) return;
@@ -430,39 +441,39 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         switch (newPose)
         {
             case PlayerPose.Grounded:
-                _animator.CrossFadeInFixedTime("move", 0.2f);
+                _animator.CrossFadeInFixedTime("idle", 0.2f);
                 break;
             case PlayerPose.Charging:
                 if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Charging"))
                     _animator.CrossFadeInFixedTime("Charging", 0.15f);
                 else
-                    _animator.Play("Charging", 0, 4f / 30f); // 放開再按從第4幀繼續
-                // ⚠️ 不設 _canChangeState = false，蓄力中保持可移動
+                    _animator.Play("Charging", 0, 4f / 30f);
                 break;
             case PlayerPose.Jump:
+                _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
                 break;
             case PlayerPose.Fall:
-                _animator.CrossFadeInFixedTime("Fall", 0.1f);
+                _animator.CrossFadeInFixedTime("Fall", 0.15f);
                 break;
             case PlayerPose.Attack:
-                _animator.CrossFadeInFixedTime("攻擊", 0.05f);
-                _canChangeState = false; // 釋放攻擊才鎖定
+                _animator.CrossFadeInFixedTime("Attack", 0.05f);
+                _canChangeState = false;
                 break;
             case PlayerPose.Hit:
-                _animator.CrossFadeInFixedTime("Hit", 0.1f);
+                _animator.CrossFadeInFixedTime("hurt", 0.1f);
                 _canChangeState = false;
                 break;
             case PlayerPose.Die:
-                _animator.CrossFadeInFixedTime("Die", 0.1f);
+                _animator.CrossFadeInFixedTime("死亡", 0.1f);
                 _canChangeState = false;
                 break;
         }
     }
 
-    // ===== 動畫事件回調 =====
     public void OnActionComplete()
     {
+        _attackFired = false;
         _canChangeState = true;
         ChangeState(PlayerPose.Grounded);
     }
@@ -474,7 +485,82 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         _animator.SetBool("IsStopping", false);
     }
 
-    // ===== 觸發型輸入 =====
+    public void OnAttackHit()
+    {
+        if (!isLocalPlayer) return;
+        if (_attackFired) return;
+        _attackFired = true;
+
+        impulseSource?.GenerateImpulse(cameraShakeStrength);
+        StartCoroutine(HitStop(hitStopDuration));
+        CmdDoAttack(transform.forward);
+    }
+
+    private IEnumerator HitStop(float duration)
+    {
+        Time.timeScale = 0.05f;
+        yield return new WaitForSecondsRealtime(duration);
+        Time.timeScale = 1f;
+    }
+
+    [Command]
+    private void CmdDoAttack(Vector3 attackerForward)
+    {
+        Vector3 hitPoint = transform.position + attackerForward * attackRange;
+        Collider[] hits = Physics.OverlapSphere(hitPoint, attackRadius, LayerMask.GetMask("Player"));
+
+        Debug.Log($"CmdDoAttack 執行，找到 {hits.Length} 個碰撞體");
+
+        foreach (var hit in hits)
+        {
+            Debug.Log($"碰到: {hit.gameObject.name}，Layer={LayerMask.LayerToName(hit.gameObject.layer)}");
+            if (hit.gameObject == gameObject) continue;
+            var target = hit.GetComponent<PlayCol>();
+            if (target != null)
+                target.TakeDamage(attackDamage, attackerForward);
+        }
+    }
+
+    [Server]
+    public void TakeDamage(int damage, Vector3 attackerForward)
+    {
+        _hp -= damage;
+        if (_hp <= 0)
+        {
+            _hp = 0;
+            RpcOnDie();
+        }
+        else
+        {
+            RpcOnHit(attackerForward);
+        }
+    }
+
+    [ClientRpc]
+    private void RpcOnHit(Vector3 attackerForward)
+    {
+        Debug.Log($"RpcOnHit 被叫到，isLocalPlayer={isLocalPlayer}，currentPose={_currentPose}");
+        _dashDirection = -attackerForward;
+        _dashTimer = hitKnockbackTime;
+        _canChangeState = true;
+        _currentPose = PlayerPose.Grounded;
+        ChangeState(PlayerPose.Hit);
+    }
+
+    [ClientRpc]
+    private void RpcOnDie()
+    {
+        ChangeState(PlayerPose.Die);
+        if (isLocalPlayer)
+            _hud?.ShowGameOver();
+    }
+
+    private void OnHpChanged(int oldHp, int newHp)
+    {
+        if (isLocalPlayer)
+            _hud?.UpdateHp(newHp, maxHp);
+    }
+
     public void OnMove(InputValue value)
     {
         if (!isLocalPlayer) return;
@@ -487,11 +573,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         if (value.isPressed && _currentPose == PlayerPose.Grounded
             && _motor.GroundingStatus.IsStableOnGround && _canChangeState)
         {
-            // 蓄力中跳躍 → 中斷蓄力
-            if (_isCharging)
-                _isCharging = false;
-
+            if (_isCharging) _isCharging = false;
             _jumpRequested = true;
+            _wasJumpRequested = true;
             ChangeState(PlayerPose.Jump);
         }
     }
@@ -502,7 +586,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
 
         if (value.isPressed)
         {
-            // 按下 → 開始蓄力（只要在地上且不在鎖定狀態）
             if (_canChangeState && _currentPose == PlayerPose.Grounded)
             {
                 _isCharging = true;
@@ -513,47 +596,53 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         }
         else
         {
-            // 放開 → 釋放攻擊
-            if (_isCharging && _currentPose == PlayerPose.Charging)
+            if (_isCharging)
             {
                 _isCharging = false;
                 _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
-
-                // 決定衝刺方向：有輸入就往輸入方向，否則面朝方向
                 _dashDirection = _moveDirection != Vector3.zero
                     ? _moveDirection.normalized
                     : transform.forward;
-
                 _dashTimer = dashDuration;
-
-                ChangeState(PlayerPose.Attack); // 這裡才鎖定
+                _attackFired = false;
+                ChangeState(PlayerPose.Attack);
             }
         }
     }
 
-    // ===== KCC ICharacterController =====
     public void UpdateVelocity(ref Vector3 currentVelocity, float deltaTime)
     {
         if (!isLocalPlayer) return;
 
-        // Attack 釋放後的衝刺位移
         if (_dashTimer > 0f)
         {
             _dashTimer -= deltaTime;
             currentVelocity = _dashDirection * (dashDistance / dashDuration);
             currentVelocity.y = 0f;
+
+            if (_currentPose == PlayerPose.Attack && !_attackFired)
+            {
+                _attackFired = true;
+                impulseSource?.GenerateImpulse(cameraShakeStrength);
+                StartCoroutine(HitStop(hitStopDuration));
+                CmdDoAttack(transform.forward);
+            }
+
             return;
         }
 
-        // Hit / Die 時不動
         if (_currentPose == PlayerPose.Hit || _currentPose == PlayerPose.Die)
         {
             currentVelocity = Vector3.zero;
             return;
         }
 
-        // Grounded 或 Charging 都照常移動
         float speed = _isRunning ? runSpeed : walkSpeed;
+
+        // 蓄力中速度減慢
+        if (_currentPose == PlayerPose.Charging)
+            speed *= chargeMoveSpeedMultiplier;
+
         currentVelocity = _moveDirection.normalized * speed * _moveInput.magnitude;
 
         if (_jumpRequested)
@@ -562,17 +651,19 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             _jumpRequested = false;
             _motor.ForceUnground();
         }
-
-        if (_motor.GroundingStatus.IsStableOnGround)
+        else if (_motor.GroundingStatus.IsStableOnGround)
+        {
             _verticalVelocity = 0f;
+        }
         else
+        {
             _verticalVelocity += gravity * deltaTime;
+        }
 
         currentVelocity.y = _verticalVelocity;
     }
 
     public void UpdateRotation(ref Quaternion currentRotation, float deltaTime) { }
-
     public void BeforeCharacterUpdate(float deltaTime) { }
     public void PostGroundingUpdate(float deltaTime) { }
     public void AfterCharacterUpdate(float deltaTime) { }
@@ -586,7 +677,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         ref HitStabilityReport hitStabilityReport) { }
     public void OnDiscreteCollisionDetected(Collider hitCollider) { }
 
-    // ===== Mirror 網路 =====
     private void OnNameChanged(string oldName, string newName)
     {
         if (playerNameText != null)
@@ -599,20 +689,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         playerName = name;
     }
 
-    // ===== Debug =====
     void OnGUI()
     {
         if (!isLocalPlayer) return;
         GUILayout.Label($"Pose: {_currentPose}");
         GUILayout.Label($"Move: {_moveState}");
+        GUILayout.Label($"HP: {_hp}");
         GUILayout.Label($"ChargeRatio: {_chargeRatio:F2}");
-        GUILayout.Label($"SpeedX: {_animator.GetFloat("SpeedX"):F2}");
-        GUILayout.Label($"SpeedZ: {_animator.GetFloat("SpeedZ"):F2}");
-        GUILayout.Label($"LastDirX: {_lastDirX:F2}");
-        GUILayout.Label($"LastDirZ: {_lastDirZ:F2}");
         GUILayout.Label($"IsRunning: {_isRunning}");
-        GUILayout.Label($"IsStopping: {_animator.GetBool("IsStopping")}");
         GUILayout.Label($"OnGround: {_motor.GroundingStatus.IsStableOnGround}");
-        GUILayout.Label($"Pos: {transform.position}");
     }
 }

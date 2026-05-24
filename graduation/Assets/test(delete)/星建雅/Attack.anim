@@ -69090,7 +69090,24 @@ AnimationClip:
   - time: 0.6
     functionName: OnActionComplete
     data: 
-    objectReferenceParameter: {fileID: 8850810923323306042, guid: 895f1f39a3b8f7c418540b58fee27d4b, type: 3}
+    objectReferenceParameter: {fileID: 8850810923323306042, guid: 895f1f39a3b8f7c418540b58fee27d4b,
+      type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.73333335
+    functionName: OnAttackHit
+    data: 
+    objectReferenceParameter: {fileID: 11500000, guid: e57e52ad5298fb14091e36daafa88945,
+      type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.1666666
+    functionName: OnActionComplete
+    data: 
+    objectReferenceParameter: {fileID: 11500000, guid: e57e52ad5298fb14091e36daafa88945,
+      type: 3}
     floatParameter: 0
     intParameter: 0
     messageOptions: 0

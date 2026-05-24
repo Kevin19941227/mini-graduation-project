@@ -612,8 +612,8 @@ MonoBehaviour:
   - {fileID: 2799763239388328609, guid: 43b7f47b82eef42498dcd5f385c7f366, type: 3}
   - {fileID: 7806367269235172815, guid: cf215ddce59f7ad4c84f3edffc71b2e4, type: 3}
   tileSize: 145
-  gridWidth: 2
-  gridHeight: 2
+  gridWidth: 1
+  gridHeight: 1
   useRandomRotation: 1
   setStatic: 1
   seed: 0
@@ -982,6 +982,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  attackDistance: 2
+  findPlayerInterval: 1
 --- !u!195 &1213793339
 NavMeshAgent:
   m_ObjectHideFlags: 0

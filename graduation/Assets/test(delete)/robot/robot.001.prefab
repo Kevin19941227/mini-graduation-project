@@ -796,6 +796,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 8804058221467890122}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 991968b684f677a48956a00aac370cc0,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1292549775517129347}
     - targetCorrespondingSourceObject: {fileID: -7623468522290961895, guid: 991968b684f677a48956a00aac370cc0,
         type: 3}
       insertIndex: -1
@@ -1254,6 +1258,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inventory: {fileID: 8836858378466844236}
   gameDatabase: {fileID: 11400000, guid: f0beb0221959dcb4d8924938c34e9826, type: 2}
+--- !u!114 &1292549775517129347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8175839190399702360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e61e4c210f728648b9fc986fb2106e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  baseData: {fileID: 0}
+  gameDatabase: {fileID: 11400000, guid: f0beb0221959dcb4d8924938c34e9826, type: 2}
+  showLocalDebugGUI: 1
+  logRecalculateResult: 0
 --- !u!4 &8808401786559631330 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 991968b684f677a48956a00aac370cc0,

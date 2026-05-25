@@ -805,14 +805,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         playerName = name;
     }
 
-    void OnGUI()
-    {
-        if (!isLocalPlayer) return;
-        GUILayout.Label($"Pose: {_currentPose}");
-        GUILayout.Label($"Move: {_moveState}");
-        GUILayout.Label($"HP: {_hp}");
-        GUILayout.Label($"ChargeRatio: {_chargeRatio:F2}");
-        GUILayout.Label($"IsRunning: {_isRunning}");
-        GUILayout.Label($"OnGround: {_motor.GroundingStatus.IsStableOnGround}");
-    }
+    // void OnGUI()
+    // {
+    //     if (!isLocalPlayer) return;
+    //     GUILayout.Label($"Pose: {_currentPose}");
+    //     GUILayout.Label($"Move: {_moveState}");
+    //     GUILayout.Label($"HP: {_hp}");
+    //     GUILayout.Label($"ChargeRatio: {_chargeRatio:F2}");
+    //     GUILayout.Label($"IsRunning: {_isRunning}");
+    //     GUILayout.Label($"OnGround: {_motor.GroundingStatus.IsStableOnGround}");
+    // }
 }

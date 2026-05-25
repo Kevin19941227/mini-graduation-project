@@ -8,6 +8,7 @@ public class PlayerRuntimeData
     public string persistentPlayerID;
     public string playerName;
 
+    public int currentMaxHP;
     public int currentHP;
     public int currentAttack;
     public float currentMoveSpeed;

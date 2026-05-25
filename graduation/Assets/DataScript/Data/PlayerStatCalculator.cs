@@ -56,14 +56,19 @@ public static class PlayerStatCalculator
         }
         #endregion
 
+        runtimeData.currentMaxHP = Mathf.Max(1, finalHP);
         runtimeData.currentAttack = finalAttack;
         runtimeData.currentMoveSpeed = Mathf.Max(0f, finalMoveSpeed);
         runtimeData.currentDefense = finalDefense;
         runtimeData.currentAttackSpeed = Mathf.Max(0.1f, finalAttackSpeed);
 
-        if (runtimeData.currentHP > finalHP)
+        if (runtimeData.currentHP <= 0 && !runtimeData.isDead)
         {
-            runtimeData.currentHP = finalHP;
+            runtimeData.currentHP = runtimeData.currentMaxHP;
+        }
+        else if (runtimeData.currentHP > runtimeData.currentMaxHP)
+        {
+            runtimeData.currentHP = runtimeData.currentMaxHP;
         }
     }
 

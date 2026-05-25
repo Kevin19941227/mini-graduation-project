@@ -107,6 +107,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
 
             slot.count += count;
             StoredParts[i] = slot;
+            NotifyInventoryChanged();
             return true;
         }
 
@@ -117,6 +118,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         );
 
         StoredParts.Add(newSlot);
+        NotifyInventoryChanged();
         return true;
     }
 
@@ -154,6 +156,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
                 StoredParts[i] = slot;
             }
 
+            NotifyInventoryChanged();
             return true;
         }
 
@@ -204,6 +207,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         );
 
         EquippedParts.Add(equippedPart);
+        NotifyInventoryChanged();
         return true;
     }
 
@@ -225,6 +229,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         EquippedParts.RemoveAt(equippedIndex);
         RebuildEquippedIndexes();
         ServerAddPart(partID, 1);
+        NotifyInventoryChanged();
         return true;
     }
 
@@ -248,6 +253,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         }
 
         RebuildEquippedIndexes();
+        NotifyInventoryChanged();
         return returnedCount;
     }
 
@@ -269,6 +275,11 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         int index,
         EquippedPartRuntimeData oldItem,
         EquippedPartRuntimeData newItem)
+    {
+        OnInventoryChanged?.Invoke();
+    }
+
+    private void NotifyInventoryChanged()
     {
         OnInventoryChanged?.Invoke();
     }

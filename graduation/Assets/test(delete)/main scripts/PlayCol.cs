@@ -128,6 +128,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     private float _jumpStartTime = -1f;
     private const float MIN_JUMP_AIRTIME = 0.15f;
 
+    private float _stopAnimTimer = 0f;
+    private const float MAX_STOP_ANIM_DURATION = 1.2f;
+
     void Awake()
     {
         _motor = GetComponent<KinematicCharacterMotor>();
@@ -144,6 +147,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             _playerInput.enabled = true;
             _motor.enabled = true;
             _mainCamera = Camera.main;
+
+            if (_hud == null)
+                _hud = FindObjectOfType<PlayerHUD>();
+
             _hud?.Init(maxHp);
             _hud?.UpdateHp(_hp, maxHp);
 
@@ -159,6 +166,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         {
             _playerInput.enabled = false;
             _motor.enabled = false;
+
+            // 隱藏其他玩家的 HUD（避免非本地玩家的 Canvas 遮擋畫面）
+            if (_hud != null)
+            {
+                var hudCanvas = _hud.GetComponent<Canvas>() ?? _hud.GetComponentInParent<Canvas>();
+                if (hudCanvas != null) hudCanvas.enabled = false;
+            }
         }
     }
 
@@ -282,13 +296,17 @@ public class PlayCol : NetworkBehaviour, ICharacterController
             if (previousState == MoveState.Run)
             {
                 _moveState = MoveState.Stop;
+                _stopAnimTimer = 0f;
                 _animator.SetBool("IsStopping", true);
             }
             else if (_moveState == MoveState.Stop)
             {
+                _stopAnimTimer += Time.deltaTime;
                 AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-                if (stateInfo.IsName("急停") && stateInfo.normalizedTime >= 0.8f)
+                bool animDone = stateInfo.normalizedTime >= 0.85f || _stopAnimTimer >= MAX_STOP_ANIM_DURATION;
+                if (animDone)
                 {
+                    _stopAnimTimer = 0f;
                     _moveState = MoveState.Idle;
                     _animator.SetBool("IsStopping", false);
                 }
@@ -553,8 +571,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController
     public void OnStopAnimationComplete()
     {
         if (_moveState != MoveState.Stop) return;
+        _stopAnimTimer = 0f;
         _moveState = MoveState.Idle;
         _animator.SetBool("IsStopping", false);
+        _animator.CrossFadeInFixedTime("idle", 0.15f);
     }
 
     public void OnAttackHit()
@@ -777,15 +797,4 @@ public class PlayCol : NetworkBehaviour, ICharacterController
         playerName = name;
     }
 
-    void OnGUI()
-    {
-        if (!isLocalPlayer) return;
-        GUILayout.Label($"Pose: {_currentPose}");
-        GUILayout.Label($"Move: {_moveState}");
-        GUILayout.Label($"HP: {_hp}");
-        GUILayout.Label($"ChargeRatio: {_chargeRatio:F2}");
-        GUILayout.Label($"IsRunning: {_isRunning}");
-        GUILayout.Label($"IsDashing: {_isDashing}");
-        GUILayout.Label($"OnGround: {_motor.GroundingStatus.IsStableOnGround}");
-    }
 }

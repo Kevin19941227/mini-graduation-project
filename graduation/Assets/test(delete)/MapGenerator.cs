@@ -1,14 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.AI.Navigation;
 
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-/// <summary>
-/// 優化記憶體分配、邊界運算與程式碼結構 (Clean Code)
-/// </summary>
 public class MapGenerator : MonoBehaviour
 {
     [Header("--- 地圖資源庫 ---")]
@@ -37,15 +35,23 @@ public class MapGenerator : MonoBehaviour
     [SerializeField, HideInInspector]
     private List<GameObject> spawnedMaps = new List<GameObject>();
 
-    // 效能優化：快取旋轉角度陣列，避免在迴圈中重複分配記憶體
     private readonly float[] rotationAngles = { 0f, 90f, 180f, 270f };
+
+    private NavMeshSurface _navMeshSurface;
+
+    public static event System.Action OnNavMeshReady;
+
+    void Awake()
+    {
+        _navMeshSurface = GetComponent<NavMeshSurface>();
+    }
 
     public void GenerateWorld()
     {
         if (mapPrefabs == null || mapPrefabs.Count == 0)
         {
-            Debug.LogError("警告：Map Prefabs 清單是空的！無法生成地圖，請檢查 Inspector 設定。");
-            return; // 直接中止生成，保護遊戲不崩潰
+            Debug.LogError("警告：Map Prefabs 清單是空的！");
+            return;
         }
 
         if (!ValidatePrefabs()) return;
@@ -55,27 +61,43 @@ public class MapGenerator : MonoBehaviour
         UpdateTileSizeIfAuto();
 
         int totalTiles = gridWidth * gridHeight;
-
-        // 效能優化：預先分配 List 容量，減少動態擴容的 GC 消耗
         List<GameObject> mapPool = new List<GameObject>(totalTiles);
         var validPrefabs = mapPrefabs.Where(p => p != null).ToList();
 
         for (int i = 0; i < totalTiles; i++)
-        {
             mapPool.Add(validPrefabs[i % validPrefabs.Count]);
-        }
 
         Shuffle(mapPool);
         PlaceTiles(mapPool);
+
+        if (_navMeshSurface != null)
+            StartCoroutine(BuildNavMeshAndNotify());
+        else
+            OnNavMeshReady?.Invoke();
     }
 
-    // --- 以下將複雜邏輯拆分為獨立方法 (Clean Code) ---
+    private System.Collections.IEnumerator BuildNavMeshAndNotify()
+    {
+        // 動態調整烘焙範圍以覆蓋整個地圖（加一格 tileSize 作為邊距）
+        _navMeshSurface.collectObjects = Unity.AI.Navigation.CollectObjects.Volume;
+        _navMeshSurface.size = new Vector3(
+            gridWidth  * tileSize + tileSize,
+            500f,
+            gridHeight * tileSize + tileSize
+        );
+        _navMeshSurface.center = Vector3.zero;
+
+        _navMeshSurface.BuildNavMesh();
+        yield return null;
+        Debug.Log("[MapGenerator] NavMesh 烘焙完成");
+        OnNavMeshReady?.Invoke();
+    }
 
     private bool ValidatePrefabs()
     {
         if (mapPrefabs == null || mapPrefabs.Count == 0 || mapPrefabs.All(p => p == null))
         {
-            Debug.LogError("[Carzy man]: 地圖清單內沒有任何 Prefab，請先拖入地圖物件！");
+            Debug.LogError("[MapGenerator]: 地圖清單內沒有任何 Prefab！");
             return false;
         }
         return true;
@@ -93,9 +115,7 @@ public class MapGenerator : MonoBehaviour
         {
             var firstPrefab = mapPrefabs.FirstOrDefault(p => p != null);
             if (firstPrefab != null)
-            {
                 tileSize = GetTargetBounds(firstPrefab).size.x;
-            }
         }
     }
 
@@ -108,7 +128,8 @@ public class MapGenerator : MonoBehaviour
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                Vector3 targetGridPos = transform.position + new Vector3(x * tileSize - offsetX, 0, z * tileSize - offsetZ);
+                Vector3 targetGridPos = transform.position + new Vector3(
+                    x * tileSize - offsetX, 0, z * tileSize - offsetZ);
                 Quaternion rotation = GetRandomRotation();
                 SpawnTile(mapPool[z * gridWidth + x], targetGridPos, rotation, x, z);
             }
@@ -128,7 +149,6 @@ public class MapGenerator : MonoBehaviour
 
         instance.transform.rotation = rotation;
         ApplyPosition(instance, gridPosition);
-
         instance.transform.SetParent(this.transform);
         if (setStatic) instance.isStatic = true;
         instance.name = $"Tile_{x}_{z}_{prefab.name}";
@@ -170,11 +190,8 @@ public class MapGenerator : MonoBehaviour
         if (rs.Length == 0) return new Bounds(obj.transform.position, Vector3.zero);
 
         Bounds b = rs[0].bounds;
-        // 效能優化：使用 for 迴圈取代 foreach，減少陣列迭代器的額外開銷
         for (int i = 1; i < rs.Length; i++)
-        {
             b.Encapsulate(rs[i].bounds);
-        }
         return b;
     }
 
@@ -184,9 +201,7 @@ public class MapGenerator : MonoBehaviour
         if (!Application.isPlaying)
         {
             for (int i = transform.childCount - 1; i >= 0; i--)
-            {
                 Undo.DestroyObjectImmediate(transform.GetChild(i).gameObject);
-            }
             spawnedMaps.Clear();
             return;
         }
@@ -221,32 +236,10 @@ public class MapGenerator : MonoBehaviour
         {
             for (int x = 0; x < gridWidth; x++)
             {
-                Vector3 center = transform.position + new Vector3(x * tileSize - offsetX, 0, z * tileSize - offsetZ);
+                Vector3 center = transform.position + new Vector3(
+                    x * tileSize - offsetX, 0, z * tileSize - offsetZ);
                 Gizmos.DrawWireCube(center, new Vector3(tileSize, 0.1f, tileSize));
             }
         }
     }
 }
-
-//#if UNITY_EDITOR
-//[CustomEditor(typeof(MapGenerator))]
-//public class MapGeneratorEditor : Editor
-//{
-//    public override void OnInspectorGUI()
-//    {
-//        serializedObject.Update();
-//        DrawDefaultInspector();
-
-//        MapGenerator script = (MapGenerator)target;
-//        GUILayout.Space(15);
-//        using (new EditorGUILayout.HorizontalScope())
-//        {
-//            GUI.backgroundColor = Color.green;
-//            if (GUILayout.Button("立即生成隨機世界", GUILayout.Height(40))) script.GenerateWorld();
-//            GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
-//            if (GUILayout.Button("清空", GUILayout.Height(40), GUILayout.Width(60))) script.ClearOldMaps();
-//        }
-//        serializedObject.ApplyModifiedProperties();
-//    }
-//}
-//#endif

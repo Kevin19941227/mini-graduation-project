@@ -18,6 +18,8 @@ public class MapDataSync : NetworkBehaviour
     [SyncVar(hook = nameof(OnSeedChanged))]
     private int _mapSeed;
 
+    private bool _mapGenerated = false;
+
     #endregion
 
     #region Server 端權威邏輯
@@ -52,11 +54,11 @@ public class MapDataSync : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 如果自己是 Server (Host 模式)，前面已經生成過了，不需要再跑一次
         if (isServer) return;
 
-        // 強制觸發 Hook，確保中途加入的玩家也能依照 Server 的種子生成地圖
-        OnSeedChanged(0, _mapSeed);
+        // 只在種子已到達且尚未生成時才觸發（處理中途加入的玩家）
+        if (_mapSeed != 0 && !_mapGenerated)
+            OnSeedChanged(0, _mapSeed);
     }
 
     /// <summary>
@@ -67,11 +69,13 @@ public class MapDataSync : NetworkBehaviour
     /// <param name="newSeed">新種子</param>
     private void OnSeedChanged(int oldSeed, int newSeed)
     {
-        if (isServer) return; // 避免 Host 玩家重複生成
+        if (isServer) return;
+        if (newSeed == 0) return;
+        if (_mapGenerated) return;
 
+        _mapGenerated = true;
         Debug.Log($"[Client] 收到權威地圖種子：{newSeed}，開始生成本地地圖！");
 
-        // 將 Server 決定的種子傳遞給你的生成器，確保結果 100% 一致
         localMapGenerator.seed = newSeed;
         localMapGenerator.GenerateWorld();
     }

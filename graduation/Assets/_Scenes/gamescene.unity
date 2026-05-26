@@ -707,6 +707,7 @@ MonoBehaviour:
   useRandomRotation: 1
   setStatic: 1
   seed: 0
+  buildNavMeshAtRuntime: 1
   autoCenter: 1
   autoTileSize: 0
   showGizmos: 1
@@ -1168,6 +1169,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Virus Fear (5)
       objectReference: {fileID: 0}
+    - target: {fileID: 3616098929778417288, guid: b12921bc85d5c994982e97c239ca7cc3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4135754154556294194, guid: b12921bc85d5c994982e97c239ca7cc3,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -1494,6 +1500,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Time Fear (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 4329379298987095057, guid: dd8dc70faad6c0b47af76211385ea755,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6970786165986196624, guid: dd8dc70faad6c0b47af76211385ea755,
         type: 3}
@@ -2001,6 +2012,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Time Fear
       objectReference: {fileID: 0}
+    - target: {fileID: 4329379298987095057, guid: dd8dc70faad6c0b47af76211385ea755,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6970786165986196624, guid: dd8dc70faad6c0b47af76211385ea755,
         type: 3}
       propertyPath: sceneId
@@ -2028,6 +2044,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Virus Fear (4)
+      objectReference: {fileID: 0}
+    - target: {fileID: 3616098929778417288, guid: b12921bc85d5c994982e97c239ca7cc3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4135754154556294194, guid: b12921bc85d5c994982e97c239ca7cc3,
         type: 3}

@@ -37,6 +37,7 @@ public class MapDataSync : NetworkBehaviour
 
         // Server 本身（或 Host）也需要生成地圖
         localMapGenerator.seed = _mapSeed;
+        localMapGenerator.buildNavMeshAtRuntime = true;
         localMapGenerator.GenerateWorld();
 
         Debug.Log($"[Server] 已決定地圖種子為：{_mapSeed}，並同步給所有玩家。");
@@ -77,6 +78,7 @@ public class MapDataSync : NetworkBehaviour
         Debug.Log($"[Client] 收到權威地圖種子：{newSeed}，開始生成本地地圖！");
 
         localMapGenerator.seed = newSeed;
+        localMapGenerator.buildNavMeshAtRuntime = false;
         localMapGenerator.GenerateWorld();
     }
 

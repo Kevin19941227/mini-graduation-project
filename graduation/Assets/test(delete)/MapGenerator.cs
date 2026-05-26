@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.AI.Navigation;
@@ -21,6 +22,8 @@ public class MapGenerator : MonoBehaviour
     public bool useRandomRotation = true;
     public bool setStatic = true;
     public int seed = 0;
+    public bool buildNavMeshAtRuntime = true;
+    public bool usePhysicsCollidersInPlayerBuild = true;
 
     [Header("--- 自動校正設定 ---")]
     [Tooltip("開啟後，程式會自動計算模型中心點並將其置中")]
@@ -40,6 +43,7 @@ public class MapGenerator : MonoBehaviour
     private NavMeshSurface _navMeshSurface;
 
     public static event System.Action OnNavMeshReady;
+    public static bool IsNavMeshReady { get; private set; }
 
     void Awake()
     {
@@ -56,6 +60,7 @@ public class MapGenerator : MonoBehaviour
 
         if (!ValidatePrefabs()) return;
 
+        IsNavMeshReady = false;
         ClearOldMaps();
         InitializeRandomSeed();
         UpdateTileSizeIfAuto();
@@ -70,16 +75,20 @@ public class MapGenerator : MonoBehaviour
         Shuffle(mapPool);
         PlaceTiles(mapPool);
 
-        if (_navMeshSurface != null)
+        if (_navMeshSurface != null && buildNavMeshAtRuntime)
             StartCoroutine(BuildNavMeshAndNotify());
         else
-            OnNavMeshReady?.Invoke();
+            NotifyNavMeshReady();
     }
 
     private System.Collections.IEnumerator BuildNavMeshAndNotify()
     {
         // 動態調整烘焙範圍以覆蓋整個地圖（加一格 tileSize 作為邊距）
         _navMeshSurface.collectObjects = Unity.AI.Navigation.CollectObjects.Volume;
+#if !UNITY_EDITOR
+        if (usePhysicsCollidersInPlayerBuild)
+            _navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+#endif
         _navMeshSurface.size = new Vector3(
             gridWidth  * tileSize + tileSize,
             500f,
@@ -90,6 +99,12 @@ public class MapGenerator : MonoBehaviour
         _navMeshSurface.BuildNavMesh();
         yield return null;
         Debug.Log("[MapGenerator] NavMesh 烘焙完成");
+        NotifyNavMeshReady();
+    }
+
+    private void NotifyNavMeshReady()
+    {
+        IsNavMeshReady = true;
         OnNavMeshReady?.Invoke();
     }
 

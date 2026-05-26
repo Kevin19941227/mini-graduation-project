@@ -38,7 +38,11 @@ public class MonsterAI : NetworkBehaviour
     void OnDisable() => MapGenerator.OnNavMeshReady -= OnNavMeshReady;
 
     // Scene 物件：地圖建好收到事件
-    private void OnNavMeshReady() => StartCoroutine(WaitAndEnable());
+    private void OnNavMeshReady()
+    {
+        if (!ShouldRunAI()) return;
+        StartCoroutine(WaitAndEnable());
+    }
 
     // Spawn 物件：Server spawn 後 NavMesh 已存在，直接嘗試
     public override void OnStartServer()
@@ -57,6 +61,7 @@ public class MonsterAI : NetworkBehaviour
 
     private System.Collections.IEnumerator WaitAndEnable()
     {
+        if (!ShouldRunAI()) yield break;
         if (_navMeshReady) yield break;
         yield return null;
         TryEnableNavMesh();
@@ -64,7 +69,12 @@ public class MonsterAI : NetworkBehaviour
 
     private void TryEnableNavMesh()
     {
+        if (!ShouldRunAI()) return;
         if (_navMeshReady) return;
+        if (_navMesh == null) return;
+
+        if (!_navMesh.enabled)
+            _navMesh.enabled = true;
 
         if (_navMesh.isOnNavMesh)
         {
@@ -99,7 +109,7 @@ public class MonsterAI : NetworkBehaviour
         Debug.Log($"[MonsterAI] {name} 開始攻擊");
     }
 
-    private bool ShouldRunAI() => _netIdentity != null ? isServer : true;
+    private bool ShouldRunAI() => _netIdentity != null ? NetworkServer.active : true;
 
     void Update()
     {

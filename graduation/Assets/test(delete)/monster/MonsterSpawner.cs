@@ -11,18 +11,29 @@ public class MonsterSpawner : NetworkBehaviour
     public List<Transform> spawnPoints = new List<Transform>();
 
     private readonly List<GameObject> _spawned = new List<GameObject>();
+    private bool _hasSpawned;
 
     void OnEnable()  => MapGenerator.OnNavMeshReady += OnNavMeshReady;
     void OnDisable() => MapGenerator.OnNavMeshReady -= OnNavMeshReady;
 
+    /// <summary>Server 啟動後，如果地圖已經準備好就補生成怪物。</summary>
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        if (MapGenerator.IsNavMeshReady)
+            StartCoroutine(SpawnAll());
+    }
+
     private void OnNavMeshReady()
     {
-        if (!isServer) return;
+        if (!NetworkServer.active) return;
         StartCoroutine(SpawnAll());
     }
 
     private System.Collections.IEnumerator SpawnAll()
     {
+        if (_hasSpawned) yield break;
         yield return null;
 
         if (monsterPrefabs == null || monsterPrefabs.Count == 0)
@@ -38,6 +49,8 @@ public class MonsterSpawner : NetworkBehaviour
         }
 
         // 怪物 i 對應生成點 i，生成點不夠則循環使用
+        _hasSpawned = true;
+
         int pointIndex = 0;
         foreach (var prefab in monsterPrefabs)
         {
@@ -61,5 +74,6 @@ public class MonsterSpawner : NetworkBehaviour
         foreach (var m in _spawned)
             if (m != null) NetworkServer.Destroy(m);
         _spawned.Clear();
+        _hasSpawned = false;
     }
 }

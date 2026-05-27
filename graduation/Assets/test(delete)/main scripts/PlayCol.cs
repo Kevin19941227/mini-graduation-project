@@ -10,7 +10,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 {
     public enum PlayerPose
     {
-        Grounded, Jump, Fall, Charging, Attack, Hit, Die
+        Grounded, Jump, Fall, Charging, Attack, Hit, Die, Dash
     }
 
     public enum MoveState
@@ -67,7 +67,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public float maxChargeTime = 1.5f;
     public float dashDistance = 3f;
     public float dashDuration = 0.2f;
-    public float chargeMoveSpeedMultiplier = 0.4f; // 蓄力時移動速度倍率
+    public float chargeMoveSpeedMultiplier = 0.4f;
+
+    [Header("Dash 設定")]
+    public float dashSpeed = 20f;
+    public float dashTime = 1f;
+    public float dashTapThreshold = 0.2f;
 
     [Header("戰鬥設定")]
     public float attackRadius = 1.5f;
@@ -115,6 +120,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private float _dashTimer = 0f;
     private bool _attackFired = false;
 
+    // Dash
+    private float _shiftPressTime = -1f;
+    private bool _isDashing = false;
+    private float _dashElapsed = 0f;
+
     private float _syncTimer = 0f;
     private const float SYNC_INTERVAL = 0.05f;
 
@@ -122,6 +132,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private float _jumpStartTime = -1f;
     private const float MIN_JUMP_AIRTIME = 0.15f;
     private bool _gameplayInputEnabled = true;
+
+    private float _stopAnimTimer = 0f;
+    private const float MAX_STOP_ANIM_DURATION = 1.2f;
 
     void Awake()
     {
@@ -140,6 +153,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _playerInput.enabled = true;
             _motor.enabled = true;
             _mainCamera = Camera.main;
+
+            if (_hud == null)
+                _hud = FindObjectOfType<PlayerHUD>();
+
             _hud?.Init(maxHp);
             _hud?.UpdateHp(_hp, maxHp);
 
@@ -155,6 +172,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         {
             _playerInput.enabled = false;
             _motor.enabled = false;
+
+            // 隱藏其他玩家的 HUD（避免非本地玩家的 Canvas 遮擋畫面）
+            if (_hud != null)
+            {
+                var hudCanvas = _hud.GetComponent<Canvas>() ?? _hud.GetComponentInParent<Canvas>();
+                if (hudCanvas != null) hudCanvas.enabled = false;
+            }
         }
     }
 
@@ -254,8 +278,30 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void UpdateInput()
     {
-        _isRunning = Keyboard.current.leftShiftKey.isPressed;
+        var shift = Keyboard.current.leftShiftKey;
 
+        if (shift.wasPressedThisFrame)
+            _shiftPressTime = Time.time;
+
+        if (shift.wasReleasedThisFrame)
+        {
+            float holdTime = Time.time - _shiftPressTime;
+            if (holdTime < dashTapThreshold
+                && _canChangeState
+                && _currentPose == PlayerPose.Grounded
+                && !_isDashing)
+            {
+                StartDash();
+            }
+            _shiftPressTime = -1f;
+        }
+
+        // 長按才算跑步
+        _isRunning = shift.isPressed
+            && _shiftPressTime >= 0
+            && (Time.time - _shiftPressTime) >= dashTapThreshold;
+
+        // Charging 放開偵測
         if (_isCharging && _currentPose == PlayerPose.Charging
             && !Mouse.current.leftButton.isPressed)
         {
@@ -270,10 +316,27 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         }
     }
 
+    private void StartDash()
+    {
+        _isDashing = true;
+        _dashElapsed = 0f;
+        _dashDirection = _moveDirection != Vector3.zero
+            ? _moveDirection.normalized
+            : transform.forward;
+        ChangeState(PlayerPose.Dash);
+    }
+
     private void UpdateState()
     {
         if (_currentPose == PlayerPose.Die) return;
         if (!_canChangeState) return;
+
+        // Dash 結束
+        if (_currentPose == PlayerPose.Dash && !_isDashing)
+        {
+            ChangeState(PlayerPose.Grounded);
+            return;
+        }
 
         if (_currentPose == PlayerPose.Jump && _verticalVelocity <= 0f
             && Time.time - _jumpStartTime >= MIN_JUMP_AIRTIME)
@@ -296,7 +359,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             if (_currentPose == PlayerPose.Charging && !_isCharging)
                 ChangeState(PlayerPose.Grounded);
 
-            if (_currentPose != PlayerPose.Charging)
+            if (_currentPose != PlayerPose.Charging && _currentPose != PlayerPose.Dash)
                 UpdateMoveState();
         }
         else
@@ -322,13 +385,17 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             if (previousState == MoveState.Run)
             {
                 _moveState = MoveState.Stop;
+                _stopAnimTimer = 0f;
                 _animator.SetBool("IsStopping", true);
             }
             else if (_moveState == MoveState.Stop)
             {
+                _stopAnimTimer += Time.deltaTime;
                 AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-                if (stateInfo.IsName("急停") && stateInfo.normalizedTime >= 0.8f)
+                bool animDone = stateInfo.normalizedTime >= 0.85f || _stopAnimTimer >= MAX_STOP_ANIM_DURATION;
+                if (animDone)
                 {
+                    _stopAnimTimer = 0f;
                     _moveState = MoveState.Idle;
                     _animator.SetBool("IsStopping", false);
                 }
@@ -361,6 +428,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         if (_currentPose == PlayerPose.Die || _currentPose == PlayerPose.Hit) return;
         if (_currentPose == PlayerPose.Attack) return;
+        if (_currentPose == PlayerPose.Dash) return;
 
         if (_moveInput != Vector2.zero)
         {
@@ -524,6 +592,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Attack:    _animator.CrossFadeInFixedTime("Attack",  0.05f); break;
             case PlayerPose.Hit:       _animator.CrossFadeInFixedTime("hurt",    0.1f);  break;
             case PlayerPose.Die:       _animator.CrossFadeInFixedTime("死亡",    0.1f);  break;
+            case PlayerPose.Dash:      _animator.CrossFadeInFixedTime("Dash",    0.05f); break;
         }
     }
 
@@ -534,6 +603,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         switch (newPose)
         {
+            
             case PlayerPose.Grounded:
                 _animator.CrossFadeInFixedTime("idle", 0.2f);
                 break;
@@ -562,6 +632,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 _animator.CrossFadeInFixedTime("死亡", 0.1f);
                 _canChangeState = false;
                 break;
+            case PlayerPose.Dash:
+                _animator.CrossFadeInFixedTime(GetDashAnimName(), 0.05f);
+                break;
         }
     }
 
@@ -571,12 +644,31 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _canChangeState = true;
         ChangeState(PlayerPose.Grounded);
     }
+    private string GetDashAnimName()
+    {
+        // 把移動方向轉換成角色本地空間
+        Vector3 localDir = transform.InverseTransformDirection(_dashDirection);
 
+        float x = localDir.x;
+        float z = localDir.z;
+
+        // 判斷主要方向
+        if (Mathf.Abs(z) >= Mathf.Abs(x))
+        {
+            return z >= 0 ? "forward dash" : "back dash";
+        }
+        else
+        {
+            return x >= 0 ? "right dash" : "left dash";
+        }
+    }
     public void OnStopAnimationComplete()
     {
         if (_moveState != MoveState.Stop) return;
+        _stopAnimTimer = 0f;
         _moveState = MoveState.Idle;
         _animator.SetBool("IsStopping", false);
+        _animator.CrossFadeInFixedTime("idle", 0.15f);
     }
 
     public void OnAttackHit()
@@ -726,6 +818,23 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             return;
         }
 
+        // Dash 位移（最優先）
+        if (_isDashing)
+        {
+            _dashElapsed += deltaTime;
+            if (_dashElapsed >= dashTime)
+            {
+                _isDashing = false;
+            }
+            else
+            {
+                currentVelocity = _dashDirection * dashSpeed;
+                currentVelocity.y = 0f;
+                return;
+            }
+        }
+
+        // 攻擊衝刺
         if (_dashTimer > 0f)
         {
             _dashTimer -= deltaTime;
@@ -755,7 +864,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         float speed = _isRunning ? runSpeed : walkSpeed;
 
-        // 蓄力中速度減慢
         if (_currentPose == PlayerPose.Charging)
             speed *= chargeMoveSpeedMultiplier;
 

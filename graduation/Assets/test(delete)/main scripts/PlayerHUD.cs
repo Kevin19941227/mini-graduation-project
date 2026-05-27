@@ -13,6 +13,14 @@ public class PlayerHUD : MonoBehaviour
     [Header("遊戲結束面板")]
     public GameObject gameOverPanel;
 
+    void Awake()
+    {
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        if (hpFillImage != null)   { hpFillImage.fillAmount = 1f; hpFillImage.color = Color.green; }
+        if (chargeFillImage != null) chargeFillImage.fillAmount = 0f;
+        if (chargeGroup != null)     chargeGroup.alpha = 0f;
+    }
+
     public void Init(float maxHp)
     {
         if (hpFillImage != null) hpFillImage.fillAmount = 1f;

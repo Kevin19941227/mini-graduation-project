@@ -311,6 +311,11 @@ PrefabInstance:
       propertyPath: m_Alpha
       value: 1.6385934e-13
       objectReference: {fileID: 0}
+    - target: {fileID: 7924783582184568128, guid: b3d655a62442c304a9d5021eadd093a2,
+        type: 3}
+      propertyPath: gameOverPanel
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8318708972026165544, guid: b3d655a62442c304a9d5021eadd093a2,
         type: 3}
       propertyPath: m_Layer
@@ -327,7 +332,8 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5930524587030224693, guid: b3d655a62442c304a9d5021eadd093a2, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b3d655a62442c304a9d5021eadd093a2, type: 3}
@@ -953,6 +959,9 @@ MonoBehaviour:
   dashDistance: 7
   dashDuration: 0.8
   chargeMoveSpeedMultiplier: 0.4
+  dashSpeed: 20
+  dashTime: 1
+  dashTapThreshold: 0.2
   attackRadius: 1.5
   attackRange: 1.2
   attackDamage: 10

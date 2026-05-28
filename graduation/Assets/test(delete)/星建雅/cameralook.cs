@@ -1,86 +1,147 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Mirror;
 
 public class Thirdpersocamera : NetworkBehaviour
 {
-    [Header("相機跟隨點")]
+    private const float LookThreshold = 0.00001f;
+
+    #region Inspector Settings
+
+    [Header("Camera Target")]
     public GameObject CameraTarget;
-    
-    [Header("相機靈敏度")]
-    [Range(0.1f, 3.0f)]
-    public float mouseSensitivity = 1.0f;
-    [Range(0.1f, 3.0f)]
-    public float horizontalSpeed = 1.0f;
-    [Range(0.1f, 3.0f)]
-    public float verticalSpeed = 1.0f;
-    
-    [Header("視角限制")]
+
+    [Header("Camera Speed")]
+    [Range(0.1f, 3.0f)] public float mouseSensitivity = 1.0f;
+    [Range(0.1f, 3.0f)] public float horizontalSpeed = 1.0f;
+    [Range(0.1f, 3.0f)] public float verticalSpeed = 1.0f;
+
+    [Header("Pitch Clamp")]
     public float TopClamp = 70.0f;
     public float BottomClamp = -50.0f;
-    
-    [Header("控制選項")]
-    public bool invertY = false;
 
-    [Header("靈敏度縮放（Mouse.delta 是像素值，預設 0.05 接近原本 InputAction 的手感）")]
-    [Range(0.01f, 0.2f)]
-    public float deltaScale = 0.05f;
+    [Header("Invert")]
+    public bool invertY;
 
-    [Header("輸入平滑（0 = 不平滑，0.08 接近原本 Slerp 的跟手感）")]
-    [Range(0f, 0.15f)]
-    public float inputSmoothTime = 0.08f;
+    [Header("Mouse Delta Scale")]
+    [Range(0.01f, 0.2f)] public float deltaScale = 0.05f;
 
-    private const float _threshold = 0.00001f;
+    [Header("Input Smooth")]
+    [Range(0f, 0.15f)] public float inputSmoothTime = 0.08f;
+
+    #endregion
+
+    #region Runtime State
+
     private float _cinemachineTargetPitch;
     private float _cinemachineTargetYaw;
     private Vector2 _look;
     private Vector2 _smoothedLook;
     private Vector2 _lookVelocity;
+    private bool _isCameraOwner;
 
+    #endregion
+
+    #region Mirror Callbacks
+
+    /// <summary>Disables camera control on remote player objects.</summary>
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        _isCameraOwner = false;
+    }
+
+    /// <summary>Assigns the scene virtual camera to follow this local player's camera target.</summary>
     public override void OnStartLocalPlayer()
     {
+        StartCoroutine(EnableCameraWhenMapReady());
+    }
+
+    private System.Collections.IEnumerator EnableCameraWhenMapReady()
+    {
+        while (!MapGenerator.IsNavMeshReady)
+        {
+            yield return null;
+        }
+
+        _isCameraOwner = true;
+
+        if (CameraTarget == null)
+        {
+            Debug.LogError("[Thirdpersocamera] CameraTarget is not assigned.");
+            yield break;
+        }
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
+        _cinemachineTargetYaw = transform.eulerAngles.y;
+        CameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
+
         if (CameraHandler.Instance != null)
+        {
             CameraHandler.Instance.SetTarget(CameraTarget.transform);
+        }
         else
-            Debug.LogError("找不到 CameraHandler！請確認場景裡有掛載 CameraHandler 的物件。");
+        {
+            Debug.LogError("[Thirdpersocamera] Cannot find CameraHandler in the scene.");
+        }
     }
 
-    void LateUpdate()
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void LateUpdate()
     {
-        if (!isLocalPlayer) return;
+        if (!_isCameraOwner || CameraTarget == null) return;
 
-        if (Mouse.current != null)
-            _look = Mouse.current.delta.ReadValue() * deltaScale;
+        UpdateLookInput();
+        RotateCameraTarget();
+    }
 
-        // 平滑輸入而非平滑旋轉，不會產生抖動
+    #endregion
+
+    #region Camera Control
+
+    private void UpdateLookInput()
+    {
+        _look = Mouse.current != null
+            ? Mouse.current.delta.ReadValue() * deltaScale
+            : Vector2.zero;
+
         _smoothedLook = inputSmoothTime > 0f
             ? Vector2.SmoothDamp(_smoothedLook, _look, ref _lookVelocity, inputSmoothTime)
             : _look;
+    }
 
-        if (_smoothedLook.sqrMagnitude >= _threshold)
+    private void RotateCameraTarget()
+    {
+        if (_smoothedLook.sqrMagnitude >= LookThreshold)
         {
-            float yawInput   = _smoothedLook.x * horizontalSpeed * mouseSensitivity;
-            float pitchInput = _smoothedLook.y * verticalSpeed   * mouseSensitivity;
+            float yawInput = _smoothedLook.x * horizontalSpeed * mouseSensitivity;
+            float pitchInput = _smoothedLook.y * verticalSpeed * mouseSensitivity;
 
-            if (invertY) pitchInput = -pitchInput;
+            if (invertY)
+            {
+                pitchInput = -pitchInput;
+            }
 
-            _cinemachineTargetYaw   += yawInput;
+            _cinemachineTargetYaw += yawInput;
             _cinemachineTargetPitch += pitchInput;
         }
 
         _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+        CameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
+    }
 
-        if (CameraTarget != null)
-            CameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
-    }
-    
-    private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
+    private static float ClampAngle(float angle, float min, float max)
     {
-        if (lfAngle < -360f) lfAngle += 360f;
-        if (lfAngle > 360f) lfAngle -= 360f;
-        return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        if (angle < -360f) angle += 360f;
+        if (angle > 360f) angle -= 360f;
+
+        return Mathf.Clamp(angle, min, max);
     }
+
+    #endregion
 }

@@ -8,6 +8,8 @@ using Steamworks;
 /// </summary>
 public class RoomUI : MonoBehaviour
 {
+    private const float RefreshInterval = 0.25f;
+
     #region UI 組件
 
     [Header("玩家槽位（4個）")]
@@ -26,6 +28,12 @@ public class RoomUI : MonoBehaviour
 
     [Header("Steam 功能")]
     public Button inviteFriendButton;
+
+    #endregion
+
+    #region Runtime State
+
+    private float _refreshTimer;
 
     #endregion
 
@@ -54,6 +62,10 @@ public class RoomUI : MonoBehaviour
 
     private void Update()
     {
+        _refreshTimer += Time.deltaTime;
+        if (_refreshTimer < RefreshInterval) return;
+
+        _refreshTimer = 0f;
         RefreshUI();
     }
 

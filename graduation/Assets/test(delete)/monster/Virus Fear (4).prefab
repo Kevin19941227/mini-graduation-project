@@ -106,7 +106,7 @@ NavMeshAgent:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3616098929778417288}
-  m_Enabled: 1
+  m_Enabled: 0
   m_AgentTypeID: 0
   m_Radius: 0.5
   m_Speed: 3.5
@@ -142,6 +142,11 @@ MonoBehaviour:
   attackDamage: 10
   attackDelay: 10
   attackCooldown: 8
+  navMeshSpawnSampleDistance: 50
+  targetNavMeshSampleDistance: 10
+  destinationUpdateInterval: 0.25
+  destinationUpdateDistance: 0.5
+  speedSyncThreshold: 0.1
 --- !u!114 &428498996854612264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,14 +154,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3616098929778417288}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
-  syncInterval: 0
+  syncInterval: 0.1
   clientAuthority: 0
   animator: {fileID: 8035840832316726856}
 --- !u!114 &1544858644023318713
@@ -190,7 +195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncDirection: 0
   syncMode: 0
-  syncInterval: 0
+  syncInterval: 0.1
   target: {fileID: 4135754154556294194}
   syncPosition: 1
   syncRotation: 1

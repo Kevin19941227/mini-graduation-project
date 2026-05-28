@@ -1,4 +1,5 @@
 using Mirror;
+using System.Reflection;
 using UnityEngine;
 
 /// <summary>
@@ -10,6 +11,8 @@ using UnityEngine;
 /// </summary>
 public class networkmanager : NetworkRoomManager
 {
+    private const int KcpTimeoutMilliseconds = 60000;
+
     #region 單例模式
 
     public static networkmanager instance;
@@ -41,6 +44,14 @@ public class networkmanager : NetworkRoomManager
 
     public override void Awake()
     {
+        if (kcpTransport == null || steamTransport == null)
+            AutoAssignTransports();
+
+        if (transport == null && kcpTransport != null)
+        {
+            ApplyTransport(kcpTransport);
+        }
+
         base.Awake();
 
         if (instance == null)
@@ -48,13 +59,9 @@ public class networkmanager : NetworkRoomManager
             instance = this;
             DontDestroyOnLoad(gameObject);
 
-            if (kcpTransport == null || steamTransport == null)
-                AutoAssignTransports();
-
             if (kcpTransport != null)
             {
-                Transport.active = kcpTransport;
-                transport = kcpTransport;
+                ApplyTransport(kcpTransport);
                 Debug.Log("[NetworkManager] 預設使用 KCP Transport");
             }
             else
@@ -87,16 +94,95 @@ public class networkmanager : NetworkRoomManager
 
     public void SwitchToKCP()
     {
-        Transport.active = kcpTransport;
-        transport = kcpTransport;
+        ApplyTransport(kcpTransport);
         Debug.Log("[NetworkManager] 切換到 KCP");
     }
 
     public void SwitchToSteam()
     {
-        Transport.active = steamTransport;
-        transport = steamTransport;
+        ApplyTransport(steamTransport);
         Debug.Log("[NetworkManager] 切換到 Steam");
+    }
+
+    private void ApplyTransport(Transport targetTransport)
+    {
+        if (targetTransport == null) return;
+
+        Transport.active = targetTransport;
+        transport = targetTransport;
+        TryApplyKcpTimeout(targetTransport);
+    }
+
+    private void TryApplyKcpTimeout(Transport targetTransport)
+    {
+        if (targetTransport == null || !targetTransport.GetType().Name.Contains("Kcp")) return;
+
+        SetNumericMemberIfExists(targetTransport, "Timeout", KcpTimeoutMilliseconds);
+        SetNumericMemberIfExists(targetTransport, "timeout", KcpTimeoutMilliseconds);
+        SetNumericMemberIfExists(targetTransport, "DisconnectTimeout", KcpTimeoutMilliseconds);
+        SetNumericMemberIfExists(targetTransport, "disconnectTimeout", KcpTimeoutMilliseconds);
+        SetNestedNumericMemberIfExists(targetTransport, "config", "Timeout", KcpTimeoutMilliseconds);
+        SetNestedNumericMemberIfExists(targetTransport, "config", "timeout", KcpTimeoutMilliseconds);
+    }
+
+    private static void SetNumericMemberIfExists(object target, string memberName, int value)
+    {
+        BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        System.Type type = target.GetType();
+
+        FieldInfo field = type.GetField(memberName, flags);
+        if (field != null)
+        {
+            SetFieldNumericValue(target, field, value);
+            return;
+        }
+
+        PropertyInfo property = type.GetProperty(memberName, flags);
+        if (property != null && property.CanWrite)
+        {
+            SetPropertyNumericValue(target, property, value);
+        }
+    }
+
+    private static void SetNestedNumericMemberIfExists(object target, string parentMemberName, string childMemberName, int value)
+    {
+        BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        System.Type type = target.GetType();
+        object parentValue = null;
+
+        FieldInfo parentField = type.GetField(parentMemberName, flags);
+        if (parentField != null)
+        {
+            parentValue = parentField.GetValue(target);
+        }
+
+        PropertyInfo parentProperty = type.GetProperty(parentMemberName, flags);
+        if (parentValue == null && parentProperty != null)
+        {
+            parentValue = parentProperty.GetValue(target);
+        }
+
+        if (parentValue == null) return;
+
+        SetNumericMemberIfExists(parentValue, childMemberName, value);
+    }
+
+    private static void SetFieldNumericValue(object target, FieldInfo field, int value)
+    {
+        System.Type valueType = field.FieldType;
+        if (valueType == typeof(int)) field.SetValue(target, value);
+        else if (valueType == typeof(uint)) field.SetValue(target, (uint)value);
+        else if (valueType == typeof(float)) field.SetValue(target, value / 1000f);
+        else if (valueType == typeof(double)) field.SetValue(target, value / 1000d);
+    }
+
+    private static void SetPropertyNumericValue(object target, PropertyInfo property, int value)
+    {
+        System.Type valueType = property.PropertyType;
+        if (valueType == typeof(int)) property.SetValue(target, value);
+        else if (valueType == typeof(uint)) property.SetValue(target, (uint)value);
+        else if (valueType == typeof(float)) property.SetValue(target, value / 1000f);
+        else if (valueType == typeof(double)) property.SetValue(target, value / 1000d);
     }
 
     #endregion
@@ -159,7 +245,6 @@ public class networkmanager : NetworkRoomManager
     }
     public ILobbyProvider GetCurrentProvider()
     {
-        Debug.Log($"[NetworkManager] GetCurrentProvider: {(_lobbyProvider == null ? "NULL" : _lobbyProvider.GetType().Name)}");
         return _lobbyProvider;
     }
     #endregion

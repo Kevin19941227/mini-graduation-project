@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEngine.AI;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.AI.Navigation;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -22,8 +20,7 @@ public class MapGenerator : MonoBehaviour
     public bool useRandomRotation = true;
     public bool setStatic = true;
     public int seed = 0;
-    public bool buildNavMeshAtRuntime = true;
-    public bool usePhysicsCollidersInPlayerBuild = true;
+    [SerializeField, Min(1)] private int tilesPerFrame = 1;
 
     [Header("--- 自動校正設定 ---")]
     [Tooltip("開啟後，程式會自動計算模型中心點並將其置中")]
@@ -40,25 +37,35 @@ public class MapGenerator : MonoBehaviour
 
     private readonly float[] rotationAngles = { 0f, 90f, 180f, 270f };
 
-    private NavMeshSurface _navMeshSurface;
+    private Coroutine _generateRoutine;
 
     public static event System.Action OnNavMeshReady;
     public static bool IsNavMeshReady { get; private set; }
 
-    void Awake()
+    public void GenerateWorld()
     {
-        _navMeshSurface = GetComponent<NavMeshSurface>();
+        if (_generateRoutine != null)
+        {
+            StopCoroutine(_generateRoutine);
+        }
+
+        _generateRoutine = StartCoroutine(GenerateWorldRoutine());
     }
 
-    public void GenerateWorld()
+    private System.Collections.IEnumerator GenerateWorldRoutine()
     {
         if (mapPrefabs == null || mapPrefabs.Count == 0)
         {
             Debug.LogError("警告：Map Prefabs 清單是空的！");
-            return;
+            _generateRoutine = null;
+            yield break;
         }
 
-        if (!ValidatePrefabs()) return;
+        if (!ValidatePrefabs())
+        {
+            _generateRoutine = null;
+            yield break;
+        }
 
         IsNavMeshReady = false;
         ClearOldMaps();
@@ -73,33 +80,12 @@ public class MapGenerator : MonoBehaviour
             mapPool.Add(validPrefabs[i % validPrefabs.Count]);
 
         Shuffle(mapPool);
-        PlaceTiles(mapPool);
+        yield return PlaceTilesOverFrames(mapPool);
 
-        if (_navMeshSurface != null && buildNavMeshAtRuntime)
-            StartCoroutine(BuildNavMeshAndNotify());
-        else
-            NotifyNavMeshReady();
-    }
-
-    private System.Collections.IEnumerator BuildNavMeshAndNotify()
-    {
-        // 動態調整烘焙範圍以覆蓋整個地圖（加一格 tileSize 作為邊距）
-        _navMeshSurface.collectObjects = Unity.AI.Navigation.CollectObjects.Volume;
-#if !UNITY_EDITOR
-        if (usePhysicsCollidersInPlayerBuild)
-            _navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-#endif
-        _navMeshSurface.size = new Vector3(
-            gridWidth  * tileSize + tileSize,
-            500f,
-            gridHeight * tileSize + tileSize
-        );
-        _navMeshSurface.center = Vector3.zero;
-
-        _navMeshSurface.BuildNavMesh();
         yield return null;
-        Debug.Log("[MapGenerator] NavMesh 烘焙完成");
         NotifyNavMeshReady();
+
+        _generateRoutine = null;
     }
 
     private void NotifyNavMeshReady()
@@ -134,10 +120,11 @@ public class MapGenerator : MonoBehaviour
         }
     }
 
-    private void PlaceTiles(List<GameObject> mapPool)
+    private System.Collections.IEnumerator PlaceTilesOverFrames(List<GameObject> mapPool)
     {
         float offsetX = (gridWidth - 1) * tileSize * 0.5f;
         float offsetZ = (gridHeight - 1) * tileSize * 0.5f;
+        int spawnedThisFrame = 0;
 
         for (int z = 0; z < gridHeight; z++)
         {
@@ -147,6 +134,13 @@ public class MapGenerator : MonoBehaviour
                     x * tileSize - offsetX, 0, z * tileSize - offsetZ);
                 Quaternion rotation = GetRandomRotation();
                 SpawnTile(mapPool[z * gridWidth + x], targetGridPos, rotation, x, z);
+
+                spawnedThisFrame++;
+                if (spawnedThisFrame >= tilesPerFrame)
+                {
+                    spawnedThisFrame = 0;
+                    yield return null;
+                }
             }
         }
     }

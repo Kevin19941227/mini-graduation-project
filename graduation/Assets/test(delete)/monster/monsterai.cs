@@ -1,275 +1,717 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.AI;
-using Mirror;
 
 public class MonsterAI : NetworkBehaviour
 {
-    [Header("設定")]
+    private const int BaseLayerIndex = 0;
+    private const float NavMeshRetryInterval = 0.5f;
+    private const float AnimationFadeTime = 0.1f;
+    private const float NetworkTransformSyncInterval = 0.1f;
+
+    private static class AnimatorIds
+    {
+        public static readonly int IdleState = Animator.StringToHash("Idle");
+        public static readonly int AttackState = Animator.StringToHash("Attack");
+        public static readonly int SpeedParameter = Animator.StringToHash("Speed");
+    }
+
+    private enum MonsterState
+    {
+        Idle,
+        Chasing,
+        Attacking,
+        Hurt
+    }
+
+    #region Inspector Settings
+
+    [Header("Combat")]
+    [SerializeField, Min(1)] private int maxHealth = 50;
+    [SerializeField] private MonsterData monsterData;
+    [SerializeField] private GameDatabase gameDatabase;
+    [SerializeField] private DropTableData dropTableOverride;
     public float attackDistance = 2f;
     public float findPlayerInterval = 1f;
     public float speedSyncInterval = 0.1f;
     public int attackDamage = 10;
-    public float attackDelay = 10f;    // 就緒後幾秒才能開始攻擊
-    public float attackCooldown = 8f;  // 每次攻擊後的冷卻時間（秒）
+    public float attackDelay = 10f;
+    public float attackCooldown = 8f;
+    [SerializeField] private string hurtAnimationStateName = "hurt";
+    [SerializeField] private AnimationClip hurtAnimationClip;
+    [SerializeField, Min(0f)] private float hurtLockDuration = 0.8f;
+    [SerializeField, Min(0.1f)] private float runtimeHitboxRadius = 0.75f;
+    [SerializeField, Min(0.1f)] private float runtimeHitboxHeight = 2f;
+    [SerializeField] private Vector3 runtimeHitboxCenter = new Vector3(0f, 1f, 0f);
 
-    private NavMeshAgent _navMesh;
+    [Header("NavMesh")]
+    [SerializeField, Min(0.1f)] private float navMeshSpawnSampleDistance = 50f;
+    [SerializeField, Min(0.1f)] private float targetNavMeshSampleDistance = 10f;
+    [SerializeField, Min(0.05f)] private float destinationUpdateInterval = 0.25f;
+    [SerializeField, Min(0.01f)] private float destinationUpdateDistance = 0.5f;
+    [SerializeField, Min(0.01f)] private float speedSyncThreshold = 0.1f;
+
+    #endregion
+
+    #region Runtime State
+
+    [SyncVar]
+    private int _currentHealth;
+
+    private NavMeshAgent _agent;
     private Animator _animator;
-    private NetworkIdentity _netIdentity;
+    private NetworkIdentity _networkIdentity;
 
     private Transform _target;
-    private bool _navMeshReady = false;
-    private bool _canAttack = false;
-    private float _attackCooldownTimer = 0f;
-    private float _findTimer = 0f;
-    private float _speedSyncTimer = 0f;
-    private float _navMeshRetryTimer = 0f;
+    private MonsterState _state = MonsterState.Idle;
 
-    private enum AIState { Idle, Chasing, Attacking }
-    private AIState _currentState = AIState.Idle;
+    private bool _navMeshReady;
+    private bool _canAttack;
+    private float _attackCooldownTimer;
+    private float _findTargetTimer;
+    private float _speedSyncTimer;
+    private float _navMeshRetryTimer;
+    private float _destinationUpdateTimer;
+    private float _hurtTimer;
+    private float _lastSyncedSpeed = -1f;
+    private Vector3 _lastDestination;
+    private int _hurtStateHash;
+    private bool _warnedMissingHurtState;
+    private PlayCol _lastDamageDealer;
 
-    void Awake()
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
     {
-        _navMesh = GetComponent<NavMeshAgent>();
+        _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
-        _netIdentity = GetComponent<NetworkIdentity>();
+        _networkIdentity = GetComponent<NetworkIdentity>();
+        _hurtStateHash = Animator.StringToHash(hurtAnimationStateName);
+        EnsureRuntimeHitbox();
+
+        if (_agent != null)
+        {
+            _agent.enabled = false;
+        }
+
+        ConfigureNetworkSyncComponents();
     }
 
-    void OnEnable()  => MapGenerator.OnNavMeshReady += OnNavMeshReady;
-    void OnDisable() => MapGenerator.OnNavMeshReady -= OnNavMeshReady;
-
-    // Scene 物件：地圖建好收到事件
-    private void OnNavMeshReady()
+    private void EnsureRuntimeHitbox()
     {
-        if (!ShouldRunAI()) return;
-        StartCoroutine(WaitAndEnable());
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] != null)
+            {
+                return;
+            }
+        }
+
+        CapsuleCollider hitbox = gameObject.AddComponent<CapsuleCollider>();
+        hitbox.isTrigger = true;
+        hitbox.radius = runtimeHitboxRadius;
+        hitbox.height = runtimeHitboxHeight;
+        hitbox.center = runtimeHitboxCenter;
+
+        Debug.Log($"[MonsterAI] {name} had no Collider, added runtime trigger hitbox.");
     }
 
-    // Spawn 物件：Server spawn 後 NavMesh 已存在，直接嘗試
+    private void ConfigureNetworkSyncComponents()
+    {
+        NetworkBehaviour[] networkBehaviours = GetComponents<NetworkBehaviour>();
+        for (int i = 0; i < networkBehaviours.Length; i++)
+        {
+            NetworkBehaviour behaviour = networkBehaviours[i];
+            if (behaviour == null || behaviour == this) continue;
+
+            string behaviourName = behaviour.GetType().Name;
+            if (behaviourName.Contains("NetworkTransform"))
+            {
+                behaviour.syncInterval = NetworkTransformSyncInterval;
+            }
+            else if (behaviourName.Contains("NetworkAnimator"))
+            {
+                behaviour.enabled = false;
+            }
+        }
+    }
+
+    private void OnEnable()
+    {
+        MapGenerator.OnNavMeshReady += OnNavMeshReady;
+    }
+
+    private void OnDisable()
+    {
+        MapGenerator.OnNavMeshReady -= OnNavMeshReady;
+    }
+
+    private void Update()
+    {
+        if (!ShouldRunServerAI()) return;
+
+        if (!EnsureNavMeshReady())
+        {
+            return;
+        }
+
+        UpdateTimers();
+        UpdateTarget();
+        UpdateState();
+    }
+
+    #endregion
+
+    #region Mirror Callbacks
+
+    /// <summary>Initializes server-side NavMesh movement after this monster is spawned.</summary>
     public override void OnStartServer()
     {
         base.OnStartServer();
-        StartCoroutine(WaitAndEnable());
+        _currentHealth = maxHealth;
+        StartCoroutine(EnableWhenNavMeshReady());
     }
 
-    // Client 上不需要 NavMeshAgent（位置由 NetworkTransform 同步）
+    /// <summary>Disables client-side NavMesh movement so NetworkTransform remains the only remote position authority.</summary>
     public override void OnStartClient()
     {
         base.OnStartClient();
-        if (!isServer && _navMesh != null)
-            _navMesh.enabled = false;
-    }
 
-    private System.Collections.IEnumerator WaitAndEnable()
-    {
-        if (!ShouldRunAI()) yield break;
-        if (_navMeshReady) yield break;
-        yield return null;
-        TryEnableNavMesh();
-    }
-
-    private void TryEnableNavMesh()
-    {
-        if (!ShouldRunAI()) return;
-        if (_navMeshReady) return;
-        if (_navMesh == null) return;
-
-        if (!_navMesh.enabled)
-            _navMesh.enabled = true;
-
-        if (_navMesh.isOnNavMesh)
+        if (!isServer && _agent != null)
         {
-            SetReady();
+            _agent.enabled = false;
+        }
+    }
+
+    #endregion
+
+    #region NavMesh Setup
+
+    private void OnNavMeshReady()
+    {
+        if (!ShouldRunServerAI()) return;
+
+        StartCoroutine(EnableWhenNavMeshReady());
+    }
+
+    private System.Collections.IEnumerator EnableWhenNavMeshReady()
+    {
+        while (!MapGenerator.IsNavMeshReady)
+        {
+            yield return null;
+        }
+
+        yield return null;
+        TryEnableNavMeshAgent();
+    }
+
+    private bool EnsureNavMeshReady()
+    {
+        if (_navMeshReady)
+        {
+            return _agent != null && _agent.enabled && _agent.isOnNavMesh;
+        }
+
+        _navMeshRetryTimer += Time.deltaTime;
+        if (_navMeshRetryTimer < NavMeshRetryInterval)
+        {
+            return false;
+        }
+
+        _navMeshRetryTimer = 0f;
+        TryEnableNavMeshAgent();
+        return _navMeshReady;
+    }
+
+    private void TryEnableNavMeshAgent()
+    {
+        if (!ShouldRunServerAI() || _navMeshReady || _agent == null) return;
+
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, navMeshSpawnSampleDistance, NavMesh.AllAreas))
+        {
+            transform.position = hit.position;
+            _agent.enabled = true;
+
+            if (_agent.isOnNavMesh || _agent.Warp(hit.position))
+            {
+                MarkNavMeshReady();
+            }
+
             return;
         }
 
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(transform.position, out hit, 50f, NavMesh.AllAreas))
-        {
-            _navMesh.Warp(hit.position);
-            SetReady();
-        }
-        else
-        {
-            Debug.LogWarning($"[MonsterAI] {name} 找不到有效的 NavMesh 位置");
-        }
+        Debug.LogWarning($"[MonsterAI] {name} cannot find a valid NavMesh position.");
     }
 
-    private void SetReady()
+    private void MarkNavMeshReady()
     {
         _navMeshReady = true;
-        _findTimer = findPlayerInterval; // 下一幀立刻找目標
-        Debug.Log($"[MonsterAI] {name} 就緒，{attackDelay} 秒後開始攻擊");
-        StartCoroutine(AttackDelayCoroutine());
+        _findTargetTimer = findPlayerInterval;
+        StartCoroutine(EnableAttackAfterDelay());
     }
 
-    private System.Collections.IEnumerator AttackDelayCoroutine()
+    private System.Collections.IEnumerator EnableAttackAfterDelay()
     {
+        _canAttack = false;
         yield return new WaitForSeconds(attackDelay);
         _canAttack = true;
-        Debug.Log($"[MonsterAI] {name} 開始攻擊");
     }
 
-    private bool ShouldRunAI() => _netIdentity != null ? NetworkServer.active : true;
+    #endregion
 
-    void Update()
+    #region Server AI
+
+    private bool ShouldRunServerAI()
     {
-        if (!ShouldRunAI()) return;
+        return _networkIdentity == null || NetworkServer.active;
+    }
 
-        if (!_navMeshReady)
+    private void UpdateTimers()
+    {
+        if (_attackCooldownTimer > 0f)
         {
-            _navMeshRetryTimer += Time.deltaTime;
-            if (_navMeshRetryTimer >= 0.5f)
-            {
-                _navMeshRetryTimer = 0f;
-                TryEnableNavMesh();
-            }
-            return;
+            _attackCooldownTimer -= Time.deltaTime;
         }
 
-        if (!_navMesh.isOnNavMesh) return;
+        _findTargetTimer += Time.deltaTime;
+        _speedSyncTimer += Time.deltaTime;
+        _destinationUpdateTimer += Time.deltaTime;
 
-        _findTimer += Time.deltaTime;
-        if (_findTimer >= findPlayerInterval)
+        if (_hurtTimer > 0f)
         {
-            _findTimer = 0f;
-            FindNearestPlayer();
+            _hurtTimer -= Time.deltaTime;
+            if (_hurtTimer <= 0f && _state == MonsterState.Hurt)
+            {
+                FinishHurt();
+            }
+        }
+    }
+
+    private void UpdateTarget()
+    {
+        if (_findTargetTimer < findPlayerInterval) return;
+
+        _findTargetTimer = 0f;
+        _target = FindNearestPlayer();
+    }
+
+    private void UpdateState()
+    {
+        if (_hurtTimer > 0f)
+        {
+            return;
         }
 
         if (_target == null)
         {
-            if (_currentState != AIState.Idle)
-            {
-                _currentState = AIState.Idle;
-                _navMesh.SetDestination(transform.position);
-                PlayAnimation("Idle");
-                SetSpeed(0f);
-            }
+            SetIdle();
             return;
         }
 
-        float dist = Vector3.Distance(transform.position, _target.position);
-
-        // 冷卻計時
-        if (_attackCooldownTimer > 0f)
-            _attackCooldownTimer -= Time.deltaTime;
-
-        if (dist <= attackDistance && _canAttack && _attackCooldownTimer <= 0f)
+        float sqrDistanceToTarget = (_target.position - transform.position).sqrMagnitude;
+        float sqrAttackDistance = attackDistance * attackDistance;
+        if (sqrDistanceToTarget <= sqrAttackDistance && _canAttack && _attackCooldownTimer <= 0f)
         {
-            if (_currentState != AIState.Attacking)
-            {
-                _currentState = AIState.Attacking;
-                _attackCooldownTimer = attackCooldown;
-                _navMesh.SetDestination(transform.position);
-                PlayAnimation("Attack");
-                SetSpeed(0f);
-            }
+            StartAttack();
+            return;
         }
-        else
-        {
-            if (_currentState != AIState.Chasing)
-                _currentState = AIState.Chasing;
 
-            _navMesh.SetDestination(_target.position);
-
-            _speedSyncTimer += Time.deltaTime;
-            if (_speedSyncTimer >= speedSyncInterval)
-            {
-                _speedSyncTimer = 0f;
-                SetSpeed(_navMesh.velocity.magnitude);
-            }
-        }
+        ChaseTarget();
     }
 
-    private void FindNearestPlayer()
+    private Transform FindNearestPlayer()
     {
-        float closestDist = Mathf.Infinity;
-        Transform closest = null;
+        Transform nearest = null;
+        float nearestSqrDistance = Mathf.Infinity;
 
-        // 優先用 Mirror 的連線列表，確保多人連線時能找到所有玩家
         if (NetworkServer.active)
         {
-            foreach (var conn in NetworkServer.connections.Values)
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
             {
-                if (conn.identity == null) continue;
-                var player = conn.identity.GetComponent<PlayCol>();
+                if (connection.identity == null) continue;
+
+                PlayCol player = connection.identity.GetComponent<PlayCol>();
                 if (player == null) continue;
 
-                float dist = Vector3.Distance(transform.position, conn.identity.transform.position);
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = conn.identity.transform;
-                }
+                CheckNearestPlayer(connection.identity.transform, ref nearest, ref nearestSqrDistance);
             }
         }
 
-        // 備用：直接搜尋場景（例如 Host 自己的玩家可能不在 connections 裡）
-        if (closest == null)
+        if (nearest != null)
         {
-            foreach (var player in FindObjectsOfType<PlayCol>())
-            {
-                float dist = Vector3.Distance(transform.position, player.transform.position);
-                if (dist < closestDist)
-                {
-                    closestDist = dist;
-                    closest = player.transform;
-                }
-            }
+            return nearest;
         }
 
-        _target = closest;
+        PlayCol[] players = FindObjectsOfType<PlayCol>();
+        for (int i = 0; i < players.Length; i++)
+        {
+            CheckNearestPlayer(players[i].transform, ref nearest, ref nearestSqrDistance);
+        }
+
+        return nearest;
     }
 
-    private void PlayAnimation(string stateName)
+    private void CheckNearestPlayer(Transform candidate, ref Transform nearest, ref float nearestSqrDistance)
     {
-        if (_netIdentity != null) RpcPlayAnimation(stateName);
-        else ApplyAnimation(stateName);
+        float sqrDistance = (transform.position - candidate.position).sqrMagnitude;
+        if (sqrDistance >= nearestSqrDistance) return;
+
+        nearestSqrDistance = sqrDistance;
+        nearest = candidate;
+    }
+
+    private void SetIdle()
+    {
+        if (_state == MonsterState.Idle) return;
+
+        _state = MonsterState.Idle;
+        StopAgent();
+        PlayAnimation(AnimatorIds.IdleState);
+        SetSpeed(0f);
+    }
+
+    private void ChaseTarget()
+    {
+        _state = MonsterState.Chasing;
+
+        ResumeAgent();
+        TrySetDestinationToTarget();
+
+        if (!_agent.hasPath && !_agent.pathPending)
+        {
+            SetSpeed(0f);
+            return;
+        }
+
+        if (_speedSyncTimer < speedSyncInterval) return;
+
+        _speedSyncTimer = 0f;
+        float currentSpeed = _agent.velocity.magnitude;
+        if (Mathf.Abs(currentSpeed - _lastSyncedSpeed) < speedSyncThreshold) return;
+
+        _lastSyncedSpeed = currentSpeed;
+        SetSpeed(currentSpeed);
+    }
+
+    private void StartAttack()
+    {
+        if (_state == MonsterState.Attacking) return;
+
+        _state = MonsterState.Attacking;
+        _attackCooldownTimer = attackCooldown;
+        StopAgent();
+        PlayAnimation(AnimatorIds.AttackState);
+        SetSpeed(0f);
+    }
+
+    private void FinishHurt()
+    {
+        _hurtTimer = 0f;
+        _state = MonsterState.Idle;
+        PlayAnimation(AnimatorIds.IdleState);
+        SetSpeed(0f);
+    }
+
+    private void StopAgent()
+    {
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
+
+        _agent.isStopped = true;
+        _agent.ResetPath();
+        _agent.velocity = Vector3.zero;
+    }
+
+    private void ResumeAgent()
+    {
+        if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
+
+        _agent.isStopped = false;
+    }
+
+    private void TrySetDestinationToTarget()
+    {
+        if (_target == null || _agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
+
+        if (_destinationUpdateTimer < destinationUpdateInterval) return;
+
+        if (!NavMesh.SamplePosition(_target.position, out NavMeshHit hit, targetNavMeshSampleDistance, NavMesh.AllAreas))
+        {
+            return;
+        }
+
+        _destinationUpdateTimer = 0f;
+        if ((_lastDestination - hit.position).sqrMagnitude < destinationUpdateDistance * destinationUpdateDistance)
+        {
+            return;
+        }
+
+        _lastDestination = hit.position;
+        ResumeAgent();
+        _agent.SetDestination(hit.position);
+    }
+
+    #endregion
+
+    #region Animation Sync
+
+    private void PlayAnimation(int stateHash)
+    {
+        if (_networkIdentity != null && NetworkServer.active)
+        {
+            RpcPlayAnimation(stateHash);
+            return;
+        }
+
+        ApplyAnimation(stateHash);
     }
 
     private void SetSpeed(float speed)
     {
-        if (_netIdentity != null) RpcSetSpeed(speed);
-        else ApplySpeed(speed);
+        if (_networkIdentity != null && NetworkServer.active)
+        {
+            RpcSetSpeed(speed);
+            return;
+        }
+
+        ApplySpeed(speed);
     }
 
-    private void ApplyAnimation(string stateName)
+    private void ApplyAnimation(int stateHash)
     {
-        if (_animator != null) _animator.CrossFadeInFixedTime(stateName, 0.1f);
+        if (_animator != null)
+        {
+            _animator.CrossFadeInFixedTime(stateHash, AnimationFadeTime);
+        }
     }
 
     private void ApplySpeed(float speed)
     {
-        if (_animator != null) _animator.SetFloat("Speed", speed);
-    }
-
-    [ClientRpc] private void RpcPlayAnimation(string stateName) => ApplyAnimation(stateName);
-    [ClientRpc] private void RpcSetSpeed(float speed) => ApplySpeed(speed);
-
-    // ── Animation Events（由 Attack 動畫呼叫）──────────────────────────
-
-    // 攻擊動畫打到人的那一幀：對範圍內玩家造成傷害
-    public void OnAttackHit()
-    {
-        if (!ShouldRunAI()) return;
-        if (_target == null) return;
-
-        float dist = Vector3.Distance(transform.position, _target.position);
-        if (dist > attackDistance) return;
-
-        var player = _target.GetComponent<PlayCol>();
-        if (player != null)
+        if (_animator != null)
         {
-            Vector3 dir = (_target.position - transform.position).normalized;
-            player.TakeDamage(attackDamage, dir);
+            _animator.SetFloat(AnimatorIds.SpeedParameter, speed);
         }
     }
 
-    // 攻擊動畫結束：重置狀態讓下一次攻擊可以重新觸發
+    [ClientRpc]
+    private void RpcPlayAnimation(int stateHash)
+    {
+        ApplyAnimation(stateHash);
+    }
+
+    [ClientRpc]
+    private void RpcSetSpeed(float speed)
+    {
+        ApplySpeed(speed);
+    }
+
+    #endregion
+
+    #region Animation Events
+
+    /// <summary>Applies player attack damage to this monster on the server.</summary>
+    [Server]
+    public void TakeDamage(int damage, Vector3 attackerForward)
+    {
+        TakeDamage(damage, attackerForward, null);
+    }
+
+    /// <summary>Applies player attack damage and records the attacking player for loot rewards.</summary>
+    [Server]
+    public void TakeDamage(int damage, Vector3 attackerForward, PlayCol damageDealer)
+    {
+        if (_currentHealth <= 0 || damage <= 0)
+        {
+            Debug.Log($"[MonsterDamage] {name} ignored damage. CurrentHP={_currentHealth}, Damage={damage}");
+            return;
+        }
+
+        if (damageDealer != null)
+        {
+            _lastDamageDealer = damageDealer;
+        }
+
+        int previousHealth = _currentHealth;
+        _currentHealth = Mathf.Max(0, _currentHealth - damage);
+        Debug.Log($"[MonsterDamage] {name} took {damage} damage. HP {previousHealth} -> {_currentHealth}");
+
+        if (_currentHealth > 0)
+        {
+            PlayHurt();
+            return;
+        }
+
+        Debug.Log($"[MonsterDamage] {name} died.");
+        Die();
+    }
+
+    [Server]
+    private void PlayHurt()
+    {
+        _state = MonsterState.Hurt;
+        _hurtTimer = GetHurtLockDuration();
+        StopAgent();
+        SetSpeed(0f);
+
+        if (_animator != null && _animator.HasState(BaseLayerIndex, _hurtStateHash))
+        {
+            PlayAnimation(_hurtStateHash);
+            return;
+        }
+
+        if (_warnedMissingHurtState) return;
+
+        _warnedMissingHurtState = true;
+        Debug.LogWarning($"[MonsterAI] {name} cannot play hurt animation because state '{hurtAnimationStateName}' is missing.");
+    }
+
+    private float GetHurtLockDuration()
+    {
+        if (hurtAnimationClip != null)
+        {
+            return Mathf.Max(hurtLockDuration, hurtAnimationClip.length);
+        }
+
+        if (_animator == null || _animator.runtimeAnimatorController == null)
+        {
+            return hurtLockDuration;
+        }
+
+        AnimationClip[] clips = _animator.runtimeAnimatorController.animationClips;
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AnimationClip clip = clips[i];
+            if (clip == null || clip.name != hurtAnimationStateName) continue;
+
+            return Mathf.Max(hurtLockDuration, clip.length);
+        }
+
+        return hurtLockDuration;
+    }
+
+    [Server]
+    private void Die()
+    {
+        StopAgent();
+        RollSceneDrops();
+
+        if (_networkIdentity != null)
+        {
+            NetworkServer.Destroy(gameObject);
+            return;
+        }
+
+        Destroy(gameObject);
+    }
+
+    [Server]
+    private void RollSceneDrops()
+    {
+        DropTableData dropTable = ResolveDropTable();
+        if (dropTable == null || dropTable.dropEntries == null || dropTable.dropEntries.Count == 0)
+        {
+            Debug.Log($"[MonsterLoot] {name} has no drop table.");
+            return;
+        }
+
+        for (int i = 0; i < dropTable.dropEntries.Count; i++)
+        {
+            DropEntry entry = dropTable.dropEntries[i];
+            if (entry == null || entry.partID <= 0) continue;
+
+            float roll = Random.value;
+            if (roll > entry.dropRate)
+            {
+                Debug.Log($"[MonsterLoot] {name} did not drop partID={entry.partID}. Roll={roll:F2}, Rate={entry.dropRate:F2}");
+                continue;
+            }
+
+            int count = Random.Range(entry.minCount, entry.maxCount + 1);
+            if (count <= 0) continue;
+
+            Vector3 dropPosition = transform.position + Random.insideUnitSphere;
+            dropPosition.y = transform.position.y + 0.5f;
+
+            int lootId = SceneLootPickup.ServerRegisterLoot(entry.partID, count, dropPosition);
+            if (lootId <= 0) continue;
+
+            BroadcastSceneLoot(lootId, entry.partID, count, dropPosition);
+            Debug.Log($"[MonsterLoot] {name} spawned scene loot partID={entry.partID} x{count}.");
+        }
+    }
+
+    [Server]
+    private void BroadcastSceneLoot(int lootId, int partId, int count, Vector3 position)
+    {
+        if (_lastDamageDealer != null)
+        {
+            _lastDamageDealer.RpcSpawnSceneLoot(lootId, partId, count, position);
+            return;
+        }
+
+        RpcSpawnSceneLoot(lootId, partId, count, position);
+    }
+
+    private DropTableData ResolveDropTable()
+    {
+        if (dropTableOverride != null)
+        {
+            return dropTableOverride;
+        }
+
+        if (monsterData == null || monsterData.dropTableID <= 0 || gameDatabase == null)
+        {
+            return null;
+        }
+
+        return gameDatabase.GetDropTableData(monsterData.dropTableID);
+    }
+
+    [ClientRpc]
+    private void RpcSpawnSceneLoot(int lootId, int partId, int count, Vector3 position)
+    {
+        PartData partData = ResolvePartData(partId);
+        GameObject visualPrefab = partData != null ? partData.partPrefab : null;
+        SceneLootPickup.ClientSpawnLoot(lootId, partId, count, position, visualPrefab);
+    }
+
+    private PartData ResolvePartData(int partId)
+    {
+        if (gameDatabase == null || partId <= 0)
+        {
+            return null;
+        }
+
+        return gameDatabase.GetPartData(partId);
+    }
+
+    /// <summary>Applies monster attack damage when the attack animation reaches its hit frame.</summary>
+    public void OnAttackHit()
+    {
+        if (!ShouldRunServerAI() || _target == null) return;
+
+        float sqrDistanceToTarget = (_target.position - transform.position).sqrMagnitude;
+        if (sqrDistanceToTarget > attackDistance * attackDistance) return;
+
+        PlayCol player = _target.GetComponent<PlayCol>();
+        if (player == null) return;
+
+        Vector3 hitDirection = (_target.position - transform.position).normalized;
+        player.TakeDamage(attackDamage, hitDirection);
+    }
+
+    /// <summary>Returns the monster to regular decision making after an animation action finishes.</summary>
     public void OnActionComplete()
     {
-        if (!ShouldRunAI()) return;
-        // 強制清除 Attacking 狀態，下一幀 Update 會重新判斷並再次觸發動畫
-        if (_currentState == AIState.Attacking)
-            _currentState = AIState.Idle;
+        if (!ShouldRunServerAI()) return;
+
+        if (_state == MonsterState.Attacking || _state == MonsterState.Hurt)
+        {
+            _state = MonsterState.Idle;
+        }
     }
+
+    #endregion
 }

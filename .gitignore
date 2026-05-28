@@ -144,3 +144,12 @@ TestResults/
 # *.bak
 # *.old
 # *.orig
+
+
+# ParrelSync / Unity Clones
+Clone/
+Clones/
+_ParrelSync/
+_ParrelSync_Backups/
+ParrelSync/
+graduation_clone_0/

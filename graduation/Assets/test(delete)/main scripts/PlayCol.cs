@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using KinematicCharacterController;
 using Cinemachine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputModeReceiver
 {
@@ -79,6 +80,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public float attackRange = 1.2f;
     public int attackDamage = 10;
     public int maxHp = 100;
+    [SerializeField] private LayerMask attackHitMask = Physics.AllLayers;
 
     [Header("打擊感設定")]
     public float hitStopDuration = 0.08f;
@@ -119,6 +121,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private Vector3 _dashDirection = Vector3.zero;
     private float _dashTimer = 0f;
     private bool _attackFired = false;
+    private readonly HashSet<int> _attackHitTargetIds = new HashSet<int>();
 
     // Dash
     private float _shiftPressTime = -1f;
@@ -126,7 +129,20 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private float _dashElapsed = 0f;
 
     private float _syncTimer = 0f;
-    private const float SYNC_INTERVAL = 0.05f;
+    private const float SYNC_INTERVAL = 0.1f;
+    private const float ANIM_FLOAT_SYNC_EPSILON = 0.02f;
+    private const float NETWORK_TRANSFORM_SYNC_INTERVAL = 0.05f;
+
+    private PlayerPose _lastSentPose = PlayerPose.Grounded;
+    private float _lastSentSpeedX;
+    private float _lastSentSpeedZ;
+    private float _lastSentLastDirX;
+    private float _lastSentLastDirZ;
+    private bool _lastSentIsMoving;
+    private bool _lastSentIsRunning;
+    private bool _lastSentIsStopping;
+    private float _lastSentChargeRatio;
+    private bool _hasSentAnimState;
 
     private bool _wasJumpRequested = false;
     private float _jumpStartTime = -1f;
@@ -142,6 +158,27 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _animator = GetComponent<Animator>();
         controlModeController = GetComponent<PlayerControlModeController>();
         _motor.CharacterController = this;
+        ConfigureNetworkSyncComponents();
+    }
+
+    private void ConfigureNetworkSyncComponents()
+    {
+        NetworkBehaviour[] networkBehaviours = GetComponents<NetworkBehaviour>();
+        for (int i = 0; i < networkBehaviours.Length; i++)
+        {
+            NetworkBehaviour behaviour = networkBehaviours[i];
+            if (behaviour == null || behaviour == this) continue;
+
+            string behaviourName = behaviour.GetType().Name;
+            if (behaviourName.Contains("NetworkTransform"))
+            {
+                behaviour.syncInterval = NETWORK_TRANSFORM_SYNC_INTERVAL;
+            }
+            else if (behaviourName.Contains("NetworkAnimator"))
+            {
+                behaviour.enabled = false;
+            }
+        }
     }
 
     void Start()
@@ -150,23 +187,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         if (isLocalPlayer)
         {
-            _playerInput.enabled = true;
-            _motor.enabled = true;
             _mainCamera = Camera.main;
-
-            if (_hud == null)
-                _hud = FindObjectOfType<PlayerHUD>();
-
-            _hud?.Init(maxHp);
-            _hud?.UpdateHp(_hp, maxHp);
-
-            if (NetworkClient.ready)
-            {
-                string name = SteamManager.Initialized
-                    ? SteamFriends.GetPersonaName()
-                    : "Player " + Random.Range(100, 999);
-                CmdSetPlayerName(name);
-            }
+            _playerInput.enabled = false;
+            _motor.enabled = false;
+            StartCoroutine(EnableLocalPlayerWhenMapReady());
         }
         else
         {
@@ -179,6 +203,31 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 var hudCanvas = _hud.GetComponent<Canvas>() ?? _hud.GetComponentInParent<Canvas>();
                 if (hudCanvas != null) hudCanvas.enabled = false;
             }
+        }
+    }
+
+    private IEnumerator EnableLocalPlayerWhenMapReady()
+    {
+        while (!MapGenerator.IsNavMeshReady)
+        {
+            yield return null;
+        }
+
+        _playerInput.enabled = true;
+        _motor.enabled = true;
+
+        if (_hud == null)
+            _hud = FindObjectOfType<PlayerHUD>();
+
+        _hud?.Init(maxHp);
+        _hud?.UpdateHp(_hp, maxHp);
+
+        if (NetworkClient.ready)
+        {
+            string name = SteamManager.Initialized
+                ? SteamFriends.GetPersonaName()
+                : "Player " + Random.Range(100, 999);
+            CmdSetPlayerName(name);
         }
     }
 
@@ -495,17 +544,91 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (_syncTimer < SYNC_INTERVAL) return;
         _syncTimer = 0f;
 
+        PlayerPose pose = _currentPose;
+        float speedX = _animator.GetFloat("SpeedX");
+        float speedZ = _animator.GetFloat("SpeedZ");
+        float lastDirX = _lastDirX;
+        float lastDirZ = _lastDirZ;
+        bool isMoving = _animator.GetBool("IsMoving");
+        bool isRunning = _animator.GetBool("IsRunning");
+        bool isStopping = _animator.GetBool("IsStopping");
+        float chargeRatio = _chargeRatio;
+
+        if (!HasAnimationStateChanged(
+            pose,
+            speedX,
+            speedZ,
+            lastDirX,
+            lastDirZ,
+            isMoving,
+            isRunning,
+            isStopping,
+            chargeRatio))
+        {
+            return;
+        }
+
+        CacheSentAnimationState(
+            pose,
+            speedX,
+            speedZ,
+            lastDirX,
+            lastDirZ,
+            isMoving,
+            isRunning,
+            isStopping,
+            chargeRatio);
+
         CmdSyncAnimState(
-            _currentPose,
-            _animator.GetFloat("SpeedX"),
-            _animator.GetFloat("SpeedZ"),
-            _lastDirX,
-            _lastDirZ,
-            _animator.GetBool("IsMoving"),
-            _animator.GetBool("IsRunning"),
-            _animator.GetBool("IsStopping"),
-            _chargeRatio
+            pose,
+            speedX,
+            speedZ,
+            lastDirX,
+            lastDirZ,
+            isMoving,
+            isRunning,
+            isStopping,
+            chargeRatio
         );
+    }
+
+    private bool HasAnimationStateChanged(
+        PlayerPose pose,
+        float speedX, float speedZ,
+        float lastDirX, float lastDirZ,
+        bool isMoving, bool isRunning, bool isStopping,
+        float chargeRatio)
+    {
+        if (!_hasSentAnimState) return true;
+        if (_lastSentPose != pose) return true;
+        if (_lastSentIsMoving != isMoving) return true;
+        if (_lastSentIsRunning != isRunning) return true;
+        if (_lastSentIsStopping != isStopping) return true;
+
+        return Mathf.Abs(_lastSentSpeedX - speedX) > ANIM_FLOAT_SYNC_EPSILON
+            || Mathf.Abs(_lastSentSpeedZ - speedZ) > ANIM_FLOAT_SYNC_EPSILON
+            || Mathf.Abs(_lastSentLastDirX - lastDirX) > ANIM_FLOAT_SYNC_EPSILON
+            || Mathf.Abs(_lastSentLastDirZ - lastDirZ) > ANIM_FLOAT_SYNC_EPSILON
+            || Mathf.Abs(_lastSentChargeRatio - chargeRatio) > ANIM_FLOAT_SYNC_EPSILON;
+    }
+
+    private void CacheSentAnimationState(
+        PlayerPose pose,
+        float speedX, float speedZ,
+        float lastDirX, float lastDirZ,
+        bool isMoving, bool isRunning, bool isStopping,
+        float chargeRatio)
+    {
+        _lastSentPose = pose;
+        _lastSentSpeedX = speedX;
+        _lastSentSpeedZ = speedZ;
+        _lastSentLastDirX = lastDirX;
+        _lastSentLastDirZ = lastDirZ;
+        _lastSentIsMoving = isMoving;
+        _lastSentIsRunning = isRunning;
+        _lastSentIsStopping = isStopping;
+        _lastSentChargeRatio = chargeRatio;
+        _hasSentAnimState = true;
     }
 
     [Command(requiresAuthority = true)]
@@ -695,18 +818,69 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void CmdDoAttack(Vector3 attackerForward)
     {
         Vector3 hitPoint = transform.position + attackerForward * attackRange;
-        Collider[] hits = Physics.OverlapSphere(hitPoint, attackRadius, LayerMask.GetMask("Player"));
+        Collider[] hits = Physics.OverlapSphere(hitPoint, attackRadius, attackHitMask, QueryTriggerInteraction.Collide);
+        Debug.Log($"[PlayerAttack] {name} server attack. HitPoint={hitPoint}, Radius={attackRadius}, Mask={attackHitMask.value}, Hits={hits.Length}");
 
-        Debug.Log($"CmdDoAttack 執行，找到 {hits.Length} 個碰撞體");
-
-        foreach (var hit in hits)
+        _attackHitTargetIds.Clear();
+        for (int i = 0; i < hits.Length; i++)
         {
-            Debug.Log($"碰到: {hit.gameObject.name}，Layer={LayerMask.LayerToName(hit.gameObject.layer)}");
-            if (hit.gameObject == gameObject) continue;
-            var target = hit.GetComponent<PlayCol>();
-            if (target != null)
-                target.TakeDamage(attackDamage, attackerForward);
+            Collider hit = hits[i];
+            if (hit == null || hit.gameObject == gameObject) continue;
+
+            Debug.Log($"[PlayerAttack] Hit collider={hit.name}, root={hit.transform.root.name}, layer={LayerMask.LayerToName(hit.gameObject.layer)}");
+
+            PlayCol playerTarget = hit.GetComponentInParent<PlayCol>();
+            if (playerTarget != null)
+            {
+                if (playerTarget == this || !TryRegisterAttackTarget(playerTarget)) continue;
+
+                playerTarget.TakeDamage(attackDamage, attackerForward);
+                continue;
+            }
+
+            MonsterAI monsterTarget = hit.GetComponentInParent<MonsterAI>();
+            if (monsterTarget == null)
+            {
+                Debug.Log($"[PlayerAttack] Collider {hit.name} has no MonsterAI in parent.");
+                continue;
+            }
+
+            if (!TryRegisterAttackTarget(monsterTarget))
+            {
+                Debug.Log($"[PlayerAttack] Monster {monsterTarget.name} already hit by this attack.");
+                continue;
+            }
+
+            Debug.Log($"[PlayerAttack] Monster hit: {monsterTarget.name}, Damage={attackDamage}");
+            monsterTarget.TakeDamage(attackDamage, attackerForward, this);
         }
+    }
+
+    private bool TryRegisterAttackTarget(Component target)
+    {
+        return target != null && _attackHitTargetIds.Add(target.GetInstanceID());
+    }
+
+    [Command]
+    public void CmdTryPickupSceneLoot(int lootId)
+    {
+        if (SceneLootPickup.ServerTryPickup(lootId, this, 2f))
+        {
+            RpcRemoveSceneLoot(lootId);
+        }
+    }
+
+    [ClientRpc]
+    private void RpcRemoveSceneLoot(int lootId)
+    {
+        SceneLootPickup.ClientRemoveLoot(lootId);
+    }
+
+    /// <summary>Spawns a client-side scene loot pickup for all observers of this player.</summary>
+    [ClientRpc]
+    public void RpcSpawnSceneLoot(int lootId, int partId, int count, Vector3 position)
+    {
+        SceneLootPickup.ClientSpawnLoot(lootId, partId, count, position, null);
     }
 
     [Server]
@@ -727,7 +901,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [ClientRpc]
     private void RpcOnHit(Vector3 attackerForward)
     {
-        Debug.Log($"RpcOnHit 被叫到，isLocalPlayer={isLocalPlayer}，currentPose={_currentPose}");
         _dashDirection = -attackerForward;
         _dashTimer = hitKnockbackTime;
         _canChangeState = true;

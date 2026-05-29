@@ -26,6 +26,9 @@ public class MonsterAI : NetworkBehaviour
 
     #region Inspector Settings
 
+    [Header("UI")]
+    [SerializeField] private WorldHealthBar _worldHealthBar;
+
     [Header("Combat")]
     [SerializeField, Min(1)] private int maxHealth = 50;
     [SerializeField] private MonsterData monsterData;
@@ -55,7 +58,7 @@ public class MonsterAI : NetworkBehaviour
 
     #region Runtime State
 
-    [SyncVar]
+    [SyncVar(hook = nameof(OnHealthChanged))]
     private int _currentHealth;
 
     private NavMeshAgent _agent;
@@ -92,9 +95,7 @@ public class MonsterAI : NetworkBehaviour
         EnsureRuntimeHitbox();
 
         if (_agent != null)
-        {
             _agent.enabled = false;
-        }
 
         ConfigureNetworkSyncComponents();
     }
@@ -105,9 +106,7 @@ public class MonsterAI : NetworkBehaviour
         for (int i = 0; i < colliders.Length; i++)
         {
             if (colliders[i] != null)
-            {
                 return;
-            }
         }
 
         CapsuleCollider hitbox = gameObject.AddComponent<CapsuleCollider>();
@@ -129,13 +128,9 @@ public class MonsterAI : NetworkBehaviour
 
             string behaviourName = behaviour.GetType().Name;
             if (behaviourName.Contains("NetworkTransform"))
-            {
                 behaviour.syncInterval = NetworkTransformSyncInterval;
-            }
             else if (behaviourName.Contains("NetworkAnimator"))
-            {
                 behaviour.enabled = false;
-            }
         }
     }
 
@@ -154,9 +149,7 @@ public class MonsterAI : NetworkBehaviour
         if (!ShouldRunServerAI()) return;
 
         if (!EnsureNavMeshReady())
-        {
             return;
-        }
 
         UpdateTimers();
         UpdateTarget();
@@ -167,7 +160,6 @@ public class MonsterAI : NetworkBehaviour
 
     #region Mirror Callbacks
 
-    /// <summary>Initializes server-side NavMesh movement after this monster is spawned.</summary>
     public override void OnStartServer()
     {
         base.OnStartServer();
@@ -175,15 +167,30 @@ public class MonsterAI : NetworkBehaviour
         StartCoroutine(EnableWhenNavMeshReady());
     }
 
-    /// <summary>Disables client-side NavMesh movement so NetworkTransform remains the only remote position authority.</summary>
     public override void OnStartClient()
     {
         base.OnStartClient();
 
         if (!isServer && _agent != null)
-        {
             _agent.enabled = false;
+
+        // Client 端確保初始動畫是 Idle
+        if (_animator != null)
+        {
+            _animator.CrossFadeInFixedTime(AnimatorIds.IdleState, 0f);
+            _animator.SetFloat(AnimatorIds.SpeedParameter, 0f);
         }
+
+        if (_worldHealthBar != null)
+        {
+            _worldHealthBar.Init(transform);
+            _worldHealthBar.UpdateHP(_currentHealth, maxHealth);
+        }
+    }
+
+    private void OnHealthChanged(int oldValue, int newValue)
+    {
+        _worldHealthBar?.UpdateHP(newValue, maxHealth);
     }
 
     #endregion
@@ -193,16 +200,13 @@ public class MonsterAI : NetworkBehaviour
     private void OnNavMeshReady()
     {
         if (!ShouldRunServerAI()) return;
-
         StartCoroutine(EnableWhenNavMeshReady());
     }
 
     private System.Collections.IEnumerator EnableWhenNavMeshReady()
     {
         while (!MapGenerator.IsNavMeshReady)
-        {
             yield return null;
-        }
 
         yield return null;
         TryEnableNavMeshAgent();
@@ -211,15 +215,11 @@ public class MonsterAI : NetworkBehaviour
     private bool EnsureNavMeshReady()
     {
         if (_navMeshReady)
-        {
             return _agent != null && _agent.enabled && _agent.isOnNavMesh;
-        }
 
         _navMeshRetryTimer += Time.deltaTime;
         if (_navMeshRetryTimer < NavMeshRetryInterval)
-        {
             return false;
-        }
 
         _navMeshRetryTimer = 0f;
         TryEnableNavMeshAgent();
@@ -236,9 +236,7 @@ public class MonsterAI : NetworkBehaviour
             _agent.enabled = true;
 
             if (_agent.isOnNavMesh || _agent.Warp(hit.position))
-            {
                 MarkNavMeshReady();
-            }
 
             return;
         }
@@ -250,6 +248,9 @@ public class MonsterAI : NetworkBehaviour
     {
         _navMeshReady = true;
         _findTargetTimer = findPlayerInterval;
+        _state = MonsterState.Idle;
+        PlayAnimation(AnimatorIds.IdleState);
+        SetSpeed(0f);
         StartCoroutine(EnableAttackAfterDelay());
     }
 
@@ -272,9 +273,7 @@ public class MonsterAI : NetworkBehaviour
     private void UpdateTimers()
     {
         if (_attackCooldownTimer > 0f)
-        {
             _attackCooldownTimer -= Time.deltaTime;
-        }
 
         _findTargetTimer += Time.deltaTime;
         _speedSyncTimer += Time.deltaTime;
@@ -284,9 +283,7 @@ public class MonsterAI : NetworkBehaviour
         {
             _hurtTimer -= Time.deltaTime;
             if (_hurtTimer <= 0f && _state == MonsterState.Hurt)
-            {
                 FinishHurt();
-            }
         }
     }
 
@@ -300,10 +297,7 @@ public class MonsterAI : NetworkBehaviour
 
     private void UpdateState()
     {
-        if (_hurtTimer > 0f)
-        {
-            return;
-        }
+        if (_hurtTimer > 0f) return;
 
         if (_target == null)
         {
@@ -313,6 +307,7 @@ public class MonsterAI : NetworkBehaviour
 
         float sqrDistanceToTarget = (_target.position - transform.position).sqrMagnitude;
         float sqrAttackDistance = attackDistance * attackDistance;
+
         if (sqrDistanceToTarget <= sqrAttackDistance && _canAttack && _attackCooldownTimer <= 0f)
         {
             StartAttack();
@@ -332,24 +327,17 @@ public class MonsterAI : NetworkBehaviour
             foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
             {
                 if (connection.identity == null) continue;
-
                 PlayCol player = connection.identity.GetComponent<PlayCol>();
                 if (player == null) continue;
-
                 CheckNearestPlayer(connection.identity.transform, ref nearest, ref nearestSqrDistance);
             }
         }
 
-        if (nearest != null)
-        {
-            return nearest;
-        }
+        if (nearest != null) return nearest;
 
         PlayCol[] players = FindObjectsOfType<PlayCol>();
         for (int i = 0; i < players.Length; i++)
-        {
             CheckNearestPlayer(players[i].transform, ref nearest, ref nearestSqrDistance);
-        }
 
         return nearest;
     }
@@ -427,26 +415,20 @@ public class MonsterAI : NetworkBehaviour
     private void ResumeAgent()
     {
         if (_agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
-
         _agent.isStopped = false;
     }
 
     private void TrySetDestinationToTarget()
     {
         if (_target == null || _agent == null || !_agent.enabled || !_agent.isOnNavMesh) return;
-
         if (_destinationUpdateTimer < destinationUpdateInterval) return;
 
         if (!NavMesh.SamplePosition(_target.position, out NavMeshHit hit, targetNavMeshSampleDistance, NavMesh.AllAreas))
-        {
             return;
-        }
 
         _destinationUpdateTimer = 0f;
         if ((_lastDestination - hit.position).sqrMagnitude < destinationUpdateDistance * destinationUpdateDistance)
-        {
             return;
-        }
 
         _lastDestination = hit.position;
         ResumeAgent();
@@ -482,17 +464,13 @@ public class MonsterAI : NetworkBehaviour
     private void ApplyAnimation(int stateHash)
     {
         if (_animator != null)
-        {
             _animator.CrossFadeInFixedTime(stateHash, AnimationFadeTime);
-        }
     }
 
     private void ApplySpeed(float speed)
     {
         if (_animator != null)
-        {
             _animator.SetFloat(AnimatorIds.SpeedParameter, speed);
-        }
     }
 
     [ClientRpc]
@@ -509,16 +487,14 @@ public class MonsterAI : NetworkBehaviour
 
     #endregion
 
-    #region Animation Events
+    #region Combat
 
-    /// <summary>Applies player attack damage to this monster on the server.</summary>
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)
     {
         TakeDamage(damage, attackerForward, null);
     }
 
-    /// <summary>Applies player attack damage and records the attacking player for loot rewards.</summary>
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward, PlayCol damageDealer)
     {
@@ -529,9 +505,7 @@ public class MonsterAI : NetworkBehaviour
         }
 
         if (damageDealer != null)
-        {
             _lastDamageDealer = damageDealer;
-        }
 
         int previousHealth = _currentHealth;
         _currentHealth = Mathf.Max(0, _currentHealth - damage);
@@ -564,27 +538,22 @@ public class MonsterAI : NetworkBehaviour
         if (_warnedMissingHurtState) return;
 
         _warnedMissingHurtState = true;
-        Debug.LogWarning($"[MonsterAI] {name} cannot play hurt animation because state '{hurtAnimationStateName}' is missing.");
+        Debug.LogWarning($"[MonsterAI] {name} cannot play hurt animation: state '{hurtAnimationStateName}' missing.");
     }
 
     private float GetHurtLockDuration()
     {
         if (hurtAnimationClip != null)
-        {
             return Mathf.Max(hurtLockDuration, hurtAnimationClip.length);
-        }
 
         if (_animator == null || _animator.runtimeAnimatorController == null)
-        {
             return hurtLockDuration;
-        }
 
         AnimationClip[] clips = _animator.runtimeAnimatorController.animationClips;
         for (int i = 0; i < clips.Length; i++)
         {
             AnimationClip clip = clips[i];
             if (clip == null || clip.name != hurtAnimationStateName) continue;
-
             return Mathf.Max(hurtLockDuration, clip.length);
         }
 
@@ -656,15 +625,10 @@ public class MonsterAI : NetworkBehaviour
 
     private DropTableData ResolveDropTable()
     {
-        if (dropTableOverride != null)
-        {
-            return dropTableOverride;
-        }
+        if (dropTableOverride != null) return dropTableOverride;
 
         if (monsterData == null || monsterData.dropTableID <= 0 || gameDatabase == null)
-        {
             return null;
-        }
 
         return gameDatabase.GetDropTableData(monsterData.dropTableID);
     }
@@ -679,15 +643,14 @@ public class MonsterAI : NetworkBehaviour
 
     private PartData ResolvePartData(int partId)
     {
-        if (gameDatabase == null || partId <= 0)
-        {
-            return null;
-        }
-
+        if (gameDatabase == null || partId <= 0) return null;
         return gameDatabase.GetPartData(partId);
     }
 
-    /// <summary>Applies monster attack damage when the attack animation reaches its hit frame.</summary>
+    #endregion
+
+    #region Animation Events
+
     public void OnAttackHit()
     {
         if (!ShouldRunServerAI() || _target == null) return;
@@ -702,15 +665,12 @@ public class MonsterAI : NetworkBehaviour
         player.TakeDamage(attackDamage, hitDirection);
     }
 
-    /// <summary>Returns the monster to regular decision making after an animation action finishes.</summary>
     public void OnActionComplete()
     {
         if (!ShouldRunServerAI()) return;
 
         if (_state == MonsterState.Attacking || _state == MonsterState.Hurt)
-        {
             _state = MonsterState.Idle;
-        }
     }
 
     #endregion

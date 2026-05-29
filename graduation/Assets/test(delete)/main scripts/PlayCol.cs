@@ -1,4 +1,4 @@
-using UnityEngine;
+    using UnityEngine;
 using Mirror;
 using Steamworks;
 using UnityEngine.InputSystem;
@@ -13,7 +13,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         Grounded, Jump, Fall, Charging, Attack, Hit, Die, Dash
     }
-
+    [Header("頭上血條")]
+    [SerializeField] private WorldHealthBar _worldHealthBar;
     public enum MoveState
     {
         Idle, Walk, Run, Stop
@@ -86,6 +87,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public float hitStopDuration = 0.08f;
     public float hitKnockbackTime = 0.15f;
     public float cameraShakeStrength = 0.3f;
+    public float hitInvincibilityDuration = 0.5f;
     public CinemachineImpulseSource impulseSource;
 
     [Header("Control Mode")]
@@ -97,6 +99,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     [SyncVar(hook = nameof(OnHpChanged))]
     private int _hp = 100;
+
+    private float _serverInvincibilityEndTime = -1f;
 
     private Animator _animator;
     private KinematicCharacterMotor _motor;
@@ -133,6 +137,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private float _shiftPressTime = -1f;
     private bool _isDashing = false;
     private float _dashElapsed = 0f;
+
+    // 無敵幀
+    private float _hitInvincibilityTimer = 0f;
 
     private float _syncTimer = 0f;
     private const float SYNC_INTERVAL = 0.1f;
@@ -181,13 +188,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
             string behaviourName = behaviour.GetType().Name;
             if (behaviourName.Contains("NetworkTransform"))
-            {
                 behaviour.syncInterval = NETWORK_TRANSFORM_SYNC_INTERVAL;
-            }
             else if (behaviourName.Contains("NetworkAnimator"))
-            {
                 behaviour.enabled = false;
-            }
         }
     }
 
@@ -195,7 +198,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         _playerInput = GetComponent<PlayerInput>();
         SubscribeEquipmentStats();
-
+    
         if (isLocalPlayer)
         {
             _mainCamera = Camera.main;
@@ -208,11 +211,16 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _playerInput.enabled = false;
             _motor.enabled = false;
 
-            // 隱藏其他玩家的 HUD（避免非本地玩家的 Canvas 遮擋畫面）
             if (_hud != null)
             {
                 var hudCanvas = _hud.GetComponent<Canvas>() ?? _hud.GetComponentInParent<Canvas>();
                 if (hudCanvas != null) hudCanvas.enabled = false;
+            }
+            // 頭上血條所有玩家都初始化
+            if (_worldHealthBar != null)
+            {
+                _worldHealthBar.Init(transform);
+                _worldHealthBar.UpdateHP(_hp, maxHp);
             }
         }
     }
@@ -225,14 +233,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void SubscribeEquipmentStats()
     {
         if (equipmentStatsController == null)
-        {
             equipmentStatsController = GetComponent<PlayerEquipmentStatsController>();
-        }
 
-        if (equipmentStatsController == null)
-        {
-            return;
-        }
+        if (equipmentStatsController == null) return;
 
         equipmentStatsController.OnStatsChanged += ApplyEquipmentStats;
         equipmentStatsController.RecalculateStats();
@@ -240,23 +243,15 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void UnsubscribeEquipmentStats()
     {
-        if (equipmentStatsController == null)
-        {
-            return;
-        }
-
+        if (equipmentStatsController == null) return;
         equipmentStatsController.OnStatsChanged -= ApplyEquipmentStats;
     }
 
     private void ApplyEquipmentStats(PlayerRuntimeData stats)
     {
-        if (stats == null)
-        {
-            return;
-        }
+        if (stats == null) return;
 
         int previousMaxHp = maxHp;
-
         maxHp = stats.currentMaxHP;
         attackDamage = stats.currentAttack;
         walkSpeed = stats.currentMoveSpeed;
@@ -264,15 +259,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _currentDefense = stats.currentDefense;
 
         if (isServer)
-        {
             ApplyServerHpAfterMaxHpChanged(previousMaxHp);
-        }
 
         if (isLocalPlayer)
-        {
-            _hud?.Init(maxHp);
-            _hud?.UpdateHp(_hp, maxHp);
-        }
+            _worldHealthBar?.UpdateHP(_hp, maxHp);
     }
 
     [Server]
@@ -287,9 +277,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         int maxHpDelta = maxHp - previousMaxHp;
         if (maxHpDelta > 0 && _hp > 0)
-        {
             _hp += maxHpDelta;
-        }
 
         _hp = Mathf.Clamp(_hp, 0, maxHp);
     }
@@ -297,18 +285,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private IEnumerator EnableLocalPlayerWhenMapReady()
     {
         while (!MapGenerator.IsNavMeshReady)
-        {
             yield return null;
+        if (_worldHealthBar != null)
+        {
+            _worldHealthBar.Init(transform);
+            _worldHealthBar.UpdateHP(_hp, maxHp);
         }
-
         _playerInput.enabled = true;
         _motor.enabled = true;
-
-        if (_hud == null)
-            _hud = FindObjectOfType<PlayerHUD>();
-
-        _hud?.Init(maxHp);
-        _hud?.UpdateHp(_hp, maxHp);
 
         if (NetworkClient.ready)
         {
@@ -341,24 +325,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void HandleControlModeToggleInput()
     {
         if (Keyboard.current == null || !Keyboard.current[assemblyModeKey].wasPressedThisFrame)
-        {
             return;
-        }
 
         if (controlModeController == null)
-        {
             controlModeController = GetComponent<PlayerControlModeController>();
-        }
 
-        if (controlModeController != null)
-        {
-            controlModeController.ToggleAssemblyMode();
-        }
+        controlModeController?.ToggleAssemblyMode();
     }
 
-    /// <summary>
-    /// Enables or disables local gameplay input without disabling KCC or Mirror components.
-    /// </summary>
     public void SetGameplayInputEnabled(bool enabledValue)
     {
         _gameplayInputEnabled = enabledValue;
@@ -370,9 +344,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         }
 
         if (_currentPose != PlayerPose.Die && _currentPose != PlayerPose.Hit)
-        {
             _canChangeState = true;
-        }
     }
 
     private void UpdateGameplayInputDisabled()
@@ -433,12 +405,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _shiftPressTime = -1f;
         }
 
-        // 長按才算跑步
         _isRunning = shift.isPressed
             && _shiftPressTime >= 0
             && (Time.time - _shiftPressTime) >= dashTapThreshold;
 
-        // Charging 放開偵測
         if (_isCharging && _currentPose == PlayerPose.Charging
             && !Mouse.current.leftButton.isPressed)
         {
@@ -465,10 +435,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void UpdateState()
     {
+        // 無敵計時
+        if (_hitInvincibilityTimer > 0f)
+            _hitInvincibilityTimer -= Time.deltaTime;
+
         if (_currentPose == PlayerPose.Die) return;
         if (!_canChangeState) return;
 
-        // Dash 結束
         if (_currentPose == PlayerPose.Dash && !_isDashing)
         {
             ChangeState(PlayerPose.Grounded);
@@ -623,10 +596,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void SyncAnimationToServer()
     {
-        if (!NetworkClient.active || !NetworkClient.ready)
-        {
-            return;
-        }
+        if (!NetworkClient.active || !NetworkClient.ready) return;
 
         _syncTimer += Time.deltaTime;
         if (_syncTimer < SYNC_INTERVAL) return;
@@ -642,50 +612,20 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         bool isStopping = _animator.GetBool("IsStopping");
         float chargeRatio = _chargeRatio;
 
-        if (!HasAnimationStateChanged(
-            pose,
-            speedX,
-            speedZ,
-            lastDirX,
-            lastDirZ,
-            isMoving,
-            isRunning,
-            isStopping,
-            chargeRatio))
-        {
-            return;
-        }
+        if (!HasAnimationStateChanged(pose, speedX, speedZ, lastDirX, lastDirZ,
+            isMoving, isRunning, isStopping, chargeRatio)) return;
 
-        CacheSentAnimationState(
-            pose,
-            speedX,
-            speedZ,
-            lastDirX,
-            lastDirZ,
-            isMoving,
-            isRunning,
-            isStopping,
-            chargeRatio);
+        CacheSentAnimationState(pose, speedX, speedZ, lastDirX, lastDirZ,
+            isMoving, isRunning, isStopping, chargeRatio);
 
-        CmdSyncAnimState(
-            pose,
-            speedX,
-            speedZ,
-            lastDirX,
-            lastDirZ,
-            isMoving,
-            isRunning,
-            isStopping,
-            chargeRatio
-        );
+        CmdSyncAnimState(pose, speedX, speedZ, lastDirX, lastDirZ,
+            isMoving, isRunning, isStopping, chargeRatio);
     }
 
     private bool HasAnimationStateChanged(
-        PlayerPose pose,
-        float speedX, float speedZ,
+        PlayerPose pose, float speedX, float speedZ,
         float lastDirX, float lastDirZ,
-        bool isMoving, bool isRunning, bool isStopping,
-        float chargeRatio)
+        bool isMoving, bool isRunning, bool isStopping, float chargeRatio)
     {
         if (!_hasSentAnimState) return true;
         if (_lastSentPose != pose) return true;
@@ -701,11 +641,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     }
 
     private void CacheSentAnimationState(
-        PlayerPose pose,
-        float speedX, float speedZ,
+        PlayerPose pose, float speedX, float speedZ,
         float lastDirX, float lastDirZ,
-        bool isMoving, bool isRunning, bool isStopping,
-        float chargeRatio)
+        bool isMoving, bool isRunning, bool isStopping, float chargeRatio)
     {
         _lastSentPose = pose;
         _lastSentSpeedX = speedX;
@@ -721,11 +659,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     [Command(requiresAuthority = true)]
     private void CmdSyncAnimState(
-        PlayerPose pose,
-        float speedX, float speedZ,
+        PlayerPose pose, float speedX, float speedZ,
         float lastDirX, float lastDirZ,
-        bool isMoving, bool isRunning, bool isStopping,
-        float chargeRatio)
+        bool isMoving, bool isRunning, bool isStopping, float chargeRatio)
     {
         _syncPose        = pose;
         _syncSpeedX      = speedX;
@@ -814,7 +750,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         switch (newPose)
         {
-            
             case PlayerPose.Grounded:
                 _animator.CrossFadeInFixedTime("idle", 0.2f);
                 break;
@@ -855,24 +790,19 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _canChangeState = true;
         ChangeState(PlayerPose.Grounded);
     }
+
     private string GetDashAnimName()
     {
-        // 把移動方向轉換成角色本地空間
         Vector3 localDir = transform.InverseTransformDirection(_dashDirection);
-
         float x = localDir.x;
         float z = localDir.z;
 
-        // 判斷主要方向
         if (Mathf.Abs(z) >= Mathf.Abs(x))
-        {
             return z >= 0 ? "forward dash" : "back dash";
-        }
         else
-        {
             return x >= 0 ? "right dash" : "left dash";
-        }
     }
+
     public void OnStopAnimationComplete()
     {
         if (_moveState != MoveState.Stop) return;
@@ -907,7 +837,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         Vector3 hitPoint = transform.position + attackerForward * attackRange;
         Collider[] hits = Physics.OverlapSphere(hitPoint, attackRadius, attackHitMask, QueryTriggerInteraction.Collide);
-        Debug.Log($"[PlayerAttack] {name} server attack. HitPoint={hitPoint}, Radius={attackRadius}, Mask={attackHitMask.value}, Hits={hits.Length}");
 
         _attackHitTargetIds.Clear();
         for (int i = 0; i < hits.Length; i++)
@@ -915,31 +844,18 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             Collider hit = hits[i];
             if (hit == null || hit.gameObject == gameObject) continue;
 
-            Debug.Log($"[PlayerAttack] Hit collider={hit.name}, root={hit.transform.root.name}, layer={LayerMask.LayerToName(hit.gameObject.layer)}");
-
             PlayCol playerTarget = hit.GetComponentInParent<PlayCol>();
             if (playerTarget != null)
             {
                 if (playerTarget == this || !TryRegisterAttackTarget(playerTarget)) continue;
-
                 playerTarget.TakeDamage(attackDamage, attackerForward);
                 continue;
             }
 
             MonsterAI monsterTarget = hit.GetComponentInParent<MonsterAI>();
-            if (monsterTarget == null)
-            {
-                Debug.Log($"[PlayerAttack] Collider {hit.name} has no MonsterAI in parent.");
-                continue;
-            }
+            if (monsterTarget == null) continue;
+            if (!TryRegisterAttackTarget(monsterTarget)) continue;
 
-            if (!TryRegisterAttackTarget(monsterTarget))
-            {
-                Debug.Log($"[PlayerAttack] Monster {monsterTarget.name} already hit by this attack.");
-                continue;
-            }
-
-            Debug.Log($"[PlayerAttack] Monster hit: {monsterTarget.name}, Damage={attackDamage}");
             monsterTarget.TakeDamage(attackDamage, attackerForward, this);
         }
     }
@@ -953,9 +869,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public void CmdTryPickupSceneLoot(int lootId)
     {
         if (SceneLootPickup.ServerTryPickup(lootId, this, 2f))
-        {
             RpcRemoveSceneLoot(lootId);
-        }
     }
 
     [ClientRpc]
@@ -964,7 +878,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         SceneLootPickup.ClientRemoveLoot(lootId);
     }
 
-    /// <summary>Spawns a client-side scene loot pickup for all observers of this player.</summary>
     [ClientRpc]
     public void RpcSpawnSceneLoot(int lootId, int partId, int count, Vector3 position)
     {
@@ -974,6 +887,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)
     {
+        // Dash 中無敵
+        if (_currentPose == PlayerPose.Dash) return;
+
+        // 無敵幀中不受傷（server 端計時，避免 non-local player 的 timer 無法遞減）
+        if (Time.time < _serverInvincibilityEndTime) return;
+        _serverInvincibilityEndTime = Time.time + hitInvincibilityDuration;
+
         int finalDamage = Mathf.Max(MIN_DAMAGE_AFTER_DEFENSE, damage - _currentDefense);
         _hp -= finalDamage;
         if (_hp <= 0)
@@ -990,9 +910,24 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [ClientRpc]
     private void RpcOnHit(Vector3 attackerForward)
     {
+        // 啟動無敵幀
+        _hitInvincibilityTimer = hitInvincibilityDuration;
+
+        // Die 狀態不能被打斷
+        if (_currentPose == PlayerPose.Die) return;
+
         _dashDirection = -attackerForward;
         _dashTimer = hitKnockbackTime;
-        _canChangeState = true;
+
+        // 攻擊或蓄力中被打到，先解鎖狀態
+        if (_currentPose == PlayerPose.Attack || _currentPose == PlayerPose.Charging)
+        {
+            _canChangeState = true;
+            _isCharging = false;
+            _dashTimer = hitKnockbackTime;
+        }
+
+        // 強制讓 ChangeState 能進入 Hit
         _currentPose = PlayerPose.Grounded;
         ChangeState(PlayerPose.Hit);
     }
@@ -1007,6 +942,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void OnHpChanged(int oldHp, int newHp)
     {
+        _worldHealthBar?.UpdateHP(newHp, maxHp);
         if (isLocalPlayer)
             _hud?.UpdateHp(newHp, maxHp);
     }
@@ -1019,7 +955,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _moveInput = Vector2.zero;
             return;
         }
-
         _moveInput = value.Get<Vector2>();
     }
 
@@ -1080,7 +1015,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             return;
         }
 
-        // Dash 位移（最優先）
         if (_isDashing)
         {
             _dashElapsed += deltaTime;
@@ -1096,7 +1030,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             }
         }
 
-        // 攻擊衝刺
         if (_dashTimer > 0f)
         {
             _dashTimer -= deltaTime;
@@ -1110,9 +1043,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 StartCoroutine(HitStop(hitStopDuration));
 
                 if (NetworkClient.active && NetworkClient.ready)
-                {
                     CmdDoAttack(transform.forward);
-                }
             }
 
             return;
@@ -1174,15 +1105,4 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         playerName = name;
     }
-
-    // void OnGUI()
-    // {
-    //     if (!isLocalPlayer) return;
-    //     GUILayout.Label($"Pose: {_currentPose}");
-    //     GUILayout.Label($"Move: {_moveState}");
-    //     GUILayout.Label($"HP: {_hp}");
-    //     GUILayout.Label($"ChargeRatio: {_chargeRatio:F2}");
-    //     GUILayout.Label($"IsRunning: {_isRunning}");
-    //     GUILayout.Label($"OnGround: {_motor.GroundingStatus.IsStableOnGround}");
-    // }
 }

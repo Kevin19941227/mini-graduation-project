@@ -10,6 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: caf51f9b3d0798b488fc10b6e82bc059,
         type: 3}
+      propertyPath: m_LocalScale.y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: caf51f9b3d0798b488fc10b6e82bc059,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 41.92
       objectReference: {fileID: 0}
@@ -142,12 +147,22 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  maxHealth: 50
+  monsterData: {fileID: 0}
+  gameDatabase: {fileID: 0}
+  dropTableOverride: {fileID: 0}
   attackDistance: 5
   findPlayerInterval: 1
   speedSyncInterval: 0.1
   attackDamage: 10
   attackDelay: 6
   attackCooldown: 8
+  hurtAnimationStateName: hurt
+  hurtAnimationClip: {fileID: 0}
+  hurtLockDuration: 0.8
+  runtimeHitboxRadius: 0.75
+  runtimeHitboxHeight: 2
+  runtimeHitboxCenter: {x: 0, y: 1, z: 0}
   navMeshSpawnSampleDistance: 50
   targetNavMeshSampleDistance: 10
   destinationUpdateInterval: 0.25

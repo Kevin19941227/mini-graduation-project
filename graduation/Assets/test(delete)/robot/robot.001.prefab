@@ -966,12 +966,16 @@ MonoBehaviour:
   attackRange: 1.2
   attackDamage: 10
   maxHp: 100
+  attackHitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
   hitStopDuration: 0.08
   hitKnockbackTime: 0.15
   cameraShakeStrength: 0.3
   impulseSource: {fileID: -6235521836210514210}
   controlModeController: {fileID: 3955687603713781639}
   assemblyModeKey: 16
+  equipmentStatsController: {fileID: 0}
 --- !u!114 &4812828581880068273
 MonoBehaviour:
   m_ObjectHideFlags: 0

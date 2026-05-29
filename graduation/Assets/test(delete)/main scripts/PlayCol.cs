@@ -92,6 +92,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [SerializeField] private PlayerControlModeController controlModeController;
     [SerializeField] private Key assemblyModeKey = Key.B;
 
+    [Header("Equipment Stats")]
+    [SerializeField] private PlayerEquipmentStatsController equipmentStatsController;
+
     [SyncVar(hook = nameof(OnHpChanged))]
     private int _hp = 100;
 
@@ -99,6 +102,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private KinematicCharacterMotor _motor;
     private PlayerInput _playerInput;
     private Camera _mainCamera;
+    private float _runSpeedMultiplier;
+    private int _currentDefense;
+    private bool _hasAppliedEquipmentStats;
 
     private Vector2 _moveInput;
     private Vector3 _moveDirection;
@@ -132,6 +138,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private const float SYNC_INTERVAL = 0.1f;
     private const float ANIM_FLOAT_SYNC_EPSILON = 0.02f;
     private const float NETWORK_TRANSFORM_SYNC_INTERVAL = 0.05f;
+    private const float FALLBACK_RUN_SPEED_MULTIPLIER = 1f;
+    private const int MIN_DAMAGE_AFTER_DEFENSE = 1;
 
     private PlayerPose _lastSentPose = PlayerPose.Grounded;
     private float _lastSentSpeedX;
@@ -157,6 +165,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _motor = GetComponent<KinematicCharacterMotor>();
         _animator = GetComponent<Animator>();
         controlModeController = GetComponent<PlayerControlModeController>();
+        equipmentStatsController = GetComponent<PlayerEquipmentStatsController>();
+        _runSpeedMultiplier = walkSpeed > 0f ? runSpeed / walkSpeed : FALLBACK_RUN_SPEED_MULTIPLIER;
         _motor.CharacterController = this;
         ConfigureNetworkSyncComponents();
     }
@@ -184,6 +194,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     void Start()
     {
         _playerInput = GetComponent<PlayerInput>();
+        SubscribeEquipmentStats();
 
         if (isLocalPlayer)
         {
@@ -204,6 +215,83 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 if (hudCanvas != null) hudCanvas.enabled = false;
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        UnsubscribeEquipmentStats();
+    }
+
+    private void SubscribeEquipmentStats()
+    {
+        if (equipmentStatsController == null)
+        {
+            equipmentStatsController = GetComponent<PlayerEquipmentStatsController>();
+        }
+
+        if (equipmentStatsController == null)
+        {
+            return;
+        }
+
+        equipmentStatsController.OnStatsChanged += ApplyEquipmentStats;
+        equipmentStatsController.RecalculateStats();
+    }
+
+    private void UnsubscribeEquipmentStats()
+    {
+        if (equipmentStatsController == null)
+        {
+            return;
+        }
+
+        equipmentStatsController.OnStatsChanged -= ApplyEquipmentStats;
+    }
+
+    private void ApplyEquipmentStats(PlayerRuntimeData stats)
+    {
+        if (stats == null)
+        {
+            return;
+        }
+
+        int previousMaxHp = maxHp;
+
+        maxHp = stats.currentMaxHP;
+        attackDamage = stats.currentAttack;
+        walkSpeed = stats.currentMoveSpeed;
+        runSpeed = walkSpeed * _runSpeedMultiplier;
+        _currentDefense = stats.currentDefense;
+
+        if (isServer)
+        {
+            ApplyServerHpAfterMaxHpChanged(previousMaxHp);
+        }
+
+        if (isLocalPlayer)
+        {
+            _hud?.Init(maxHp);
+            _hud?.UpdateHp(_hp, maxHp);
+        }
+    }
+
+    [Server]
+    private void ApplyServerHpAfterMaxHpChanged(int previousMaxHp)
+    {
+        if (!_hasAppliedEquipmentStats)
+        {
+            _hp = maxHp;
+            _hasAppliedEquipmentStats = true;
+            return;
+        }
+
+        int maxHpDelta = maxHp - previousMaxHp;
+        if (maxHpDelta > 0 && _hp > 0)
+        {
+            _hp += maxHpDelta;
+        }
+
+        _hp = Mathf.Clamp(_hp, 0, maxHp);
     }
 
     private IEnumerator EnableLocalPlayerWhenMapReady()
@@ -886,7 +974,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)
     {
-        _hp -= damage;
+        int finalDamage = Mathf.Max(MIN_DAMAGE_AFTER_DEFENSE, damage - _currentDefense);
+        _hp -= finalDamage;
         if (_hp <= 0)
         {
             _hp = 0;

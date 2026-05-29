@@ -1,4 +1,4 @@
-    using UnityEngine;
+using UnityEngine;
 using Mirror;
 using Steamworks;
 using UnityEngine.InputSystem;
@@ -13,8 +13,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         Grounded, Jump, Fall, Charging, Attack, Hit, Die, Dash
     }
-    [Header("頭上血條")]
-    [SerializeField] private WorldHealthBar _worldHealthBar;
     public enum MoveState
     {
         Idle, Walk, Run, Stop
@@ -22,7 +20,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     [Header("UI")]
     [SerializeField] private TextMesh playerNameText;
-    [SerializeField] private PlayerHUD _hud;
+    [SerializeField] private WorldHealthBar _worldHealthBar;
 
     [SyncVar(hook = nameof(OnNameChanged))]
     private string playerName;
@@ -133,12 +131,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private bool _attackFired = false;
     private readonly HashSet<int> _attackHitTargetIds = new HashSet<int>();
 
-    // Dash
     private float _shiftPressTime = -1f;
     private bool _isDashing = false;
     private float _dashElapsed = 0f;
 
-    // 無敵幀
     private float _hitInvincibilityTimer = 0f;
 
     private float _syncTimer = 0f;
@@ -198,7 +194,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         _playerInput = GetComponent<PlayerInput>();
         SubscribeEquipmentStats();
-    
+
+        // 所有玩家都初始化頭上血條
+        if (_worldHealthBar != null)
+            _worldHealthBar.Init(transform);
+
         if (isLocalPlayer)
         {
             _mainCamera = Camera.main;
@@ -210,18 +210,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         {
             _playerInput.enabled = false;
             _motor.enabled = false;
-
-            if (_hud != null)
-            {
-                var hudCanvas = _hud.GetComponent<Canvas>() ?? _hud.GetComponentInParent<Canvas>();
-                if (hudCanvas != null) hudCanvas.enabled = false;
-            }
-            // 頭上血條所有玩家都初始化
-            if (_worldHealthBar != null)
-            {
-                _worldHealthBar.Init(transform);
-                _worldHealthBar.UpdateHP(_hp, maxHp);
-            }
         }
     }
 
@@ -261,8 +249,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (isServer)
             ApplyServerHpAfterMaxHpChanged(previousMaxHp);
 
-        if (isLocalPlayer)
-            _worldHealthBar?.UpdateHP(_hp, maxHp);
+        // 裝備更新時同步血條
+        _worldHealthBar?.UpdateHP(_hp, maxHp);
     }
 
     [Server]
@@ -286,13 +274,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         while (!MapGenerator.IsNavMeshReady)
             yield return null;
-        if (_worldHealthBar != null)
-        {
-            _worldHealthBar.Init(transform);
-            _worldHealthBar.UpdateHP(_hp, maxHp);
-        }
+
         _playerInput.enabled = true;
         _motor.enabled = true;
+
+        // 地圖就緒後初始化血條顯示
+        _worldHealthBar?.UpdateHP(_hp, maxHp);
 
         if (NetworkClient.ready)
         {
@@ -435,7 +422,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private void UpdateState()
     {
-        // 無敵計時
         if (_hitInvincibilityTimer > 0f)
             _hitInvincibilityTimer -= Time.deltaTime;
 
@@ -590,8 +576,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
             _animator.SetFloat("ChargeRatio", _chargeRatio);
         }
-
-        _hud?.UpdateCharge(_chargeRatio, _isCharging);
     }
 
     private void SyncAnimationToServer()
@@ -678,6 +662,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         if (isLocalPlayer) return;
         ApplyPoseToAnimator(newPose);
+    }
+
+    // 血量變化時更新頭上血條（所有客戶端都會收到）
+    private void OnHpChanged(int oldHp, int newHp)
+    {
+        _worldHealthBar?.UpdateHP(newHp, maxHp);
     }
 
     private void OnSyncSpeedXChanged(float oldVal, float newVal)
@@ -887,10 +877,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)
     {
-        // Dash 中無敵
         if (_currentPose == PlayerPose.Dash) return;
 
-        // 無敵幀中不受傷（server 端計時，避免 non-local player 的 timer 無法遞減）
         if (Time.time < _serverInvincibilityEndTime) return;
         _serverInvincibilityEndTime = Time.time + hitInvincibilityDuration;
 
@@ -910,16 +898,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [ClientRpc]
     private void RpcOnHit(Vector3 attackerForward)
     {
-        // 啟動無敵幀
         _hitInvincibilityTimer = hitInvincibilityDuration;
 
-        // Die 狀態不能被打斷
         if (_currentPose == PlayerPose.Die) return;
 
         _dashDirection = -attackerForward;
         _dashTimer = hitKnockbackTime;
 
-        // 攻擊或蓄力中被打到，先解鎖狀態
         if (_currentPose == PlayerPose.Attack || _currentPose == PlayerPose.Charging)
         {
             _canChangeState = true;
@@ -927,7 +912,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             _dashTimer = hitKnockbackTime;
         }
 
-        // 強制讓 ChangeState 能進入 Hit
         _currentPose = PlayerPose.Grounded;
         ChangeState(PlayerPose.Hit);
     }
@@ -936,15 +920,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void RpcOnDie()
     {
         ChangeState(PlayerPose.Die);
-        if (isLocalPlayer)
-            _hud?.ShowGameOver();
-    }
-
-    private void OnHpChanged(int oldHp, int newHp)
-    {
-        _worldHealthBar?.UpdateHP(newHp, maxHp);
-        if (isLocalPlayer)
-            _hud?.UpdateHp(newHp, maxHp);
     }
 
     public void OnMove(InputValue value)
@@ -1019,9 +994,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         {
             _dashElapsed += deltaTime;
             if (_dashElapsed >= dashTime)
-            {
                 _isDashing = false;
-            }
             else
             {
                 currentVelocity = _dashDirection * dashSpeed;

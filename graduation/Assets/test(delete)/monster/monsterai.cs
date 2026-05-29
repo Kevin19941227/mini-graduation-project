@@ -26,9 +26,6 @@ public class MonsterAI : NetworkBehaviour
 
     #region Inspector Settings
 
-    [Header("UI")]
-    [SerializeField] private WorldHealthBar _worldHealthBar;
-
     [Header("Combat")]
     [SerializeField, Min(1)] private int maxHealth = 50;
     [SerializeField] private MonsterData monsterData;
@@ -53,6 +50,9 @@ public class MonsterAI : NetworkBehaviour
     [SerializeField, Min(0.05f)] private float destinationUpdateInterval = 0.25f;
     [SerializeField, Min(0.01f)] private float destinationUpdateDistance = 0.5f;
     [SerializeField, Min(0.01f)] private float speedSyncThreshold = 0.1f;
+
+    [Header("頭上血條")]
+    [SerializeField] private WorldHealthBar _worldHealthBar;
 
     #endregion
 
@@ -164,6 +164,10 @@ public class MonsterAI : NetworkBehaviour
     {
         base.OnStartServer();
         _currentHealth = maxHealth;
+
+        if (_worldHealthBar != null)
+            _worldHealthBar.Init(transform);
+
         StartCoroutine(EnableWhenNavMeshReady());
     }
 
@@ -174,23 +178,18 @@ public class MonsterAI : NetworkBehaviour
         if (!isServer && _agent != null)
             _agent.enabled = false;
 
-        // Client 端確保初始動畫是 Idle
         if (_animator != null)
         {
             _animator.CrossFadeInFixedTime(AnimatorIds.IdleState, 0f);
             _animator.SetFloat(AnimatorIds.SpeedParameter, 0f);
         }
 
+        // 初始化頭上血條
         if (_worldHealthBar != null)
         {
             _worldHealthBar.Init(transform);
             _worldHealthBar.UpdateHP(_currentHealth, maxHealth);
         }
-    }
-
-    private void OnHealthChanged(int oldValue, int newValue)
-    {
-        _worldHealthBar?.UpdateHP(newValue, maxHealth);
     }
 
     #endregion
@@ -488,6 +487,12 @@ public class MonsterAI : NetworkBehaviour
     #endregion
 
     #region Combat
+
+    // 血量變化時更新血條
+    private void OnHealthChanged(int oldHp, int newHp)
+    {
+        _worldHealthBar?.UpdateHP(newHp, maxHealth);
+    }
 
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)

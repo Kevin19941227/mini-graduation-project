@@ -18,29 +18,6 @@ public static class HUDCreator
         canvasGo.AddComponent<GraphicRaycaster>();
         var hud = canvasGo.AddComponent<PlayerHUD>();
 
-        // ── 血量條（左下角）──
-        var hpContainer = CreateRect(canvasGo.transform, "HP_Container",
-            anchorMin: new Vector2(0, 0), anchorMax: new Vector2(0, 0),
-            pivot: new Vector2(0, 0),
-            pos: new Vector2(30, 30), size: new Vector2(350, 35));
-        AddImage(hpContainer, new Color(0, 0, 0, 0.6f));
-
-        var hpBg = CreateRect(hpContainer.transform, "HP_BG",
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        AddImage(hpBg, new Color(0.2f, 0.05f, 0.05f, 1f));
-
-        var hpFillGo = CreateRect(hpContainer.transform, "HP_Fill",
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        var hpImg = hpFillGo.AddComponent<Image>();
-        hpImg.color = Color.green;
-        hpImg.type = Image.Type.Filled;
-        hpImg.fillMethod = Image.FillMethod.Horizontal;
-        hpImg.fillOrigin = (int)Image.OriginHorizontal.Left;
-        hud.hpFillImage = hpImg;
-
-        AddOutlineText(hpContainer.transform, "HP_Label", "HP",
-            new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(5, 0), new Vector2(60, 35), 20, TextAnchor.MiddleLeft);
-
         // ── 蓄力條（下方中央）──
         var chargeContainer = CreateRect(canvasGo.transform, "Charge_Container",
             anchorMin: new Vector2(0.5f, 0), anchorMax: new Vector2(0.5f, 0),

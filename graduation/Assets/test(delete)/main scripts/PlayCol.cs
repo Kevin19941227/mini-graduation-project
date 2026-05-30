@@ -21,6 +21,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Header("UI")]
     [SerializeField] private TextMesh playerNameText;
     [SerializeField] private WorldHealthBar _worldHealthBar;
+    [SerializeField] private PlayerHUD hud;
 
     [Header("音效設定")]
     [SerializeField] private AudioSource _audioSource;
@@ -232,6 +233,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (isLocalPlayer)
         {
             _mainCamera = Camera.main;
+            InitializeLocalHud();
             _playerInput.enabled = false;
             _motor.enabled = false;
             StartCoroutine(EnableLocalPlayerWhenMapReady());
@@ -246,6 +248,32 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void OnDestroy()
     {
         UnsubscribeEquipmentStats();
+    }
+
+    private void InitializeLocalHud()
+    {
+        if (hud == null)
+            hud = FindObjectOfType<PlayerHUD>();
+
+        if (hud == null) return;
+
+        hud.Init();
+        hud.UpdateHP(_hp, maxHp);
+        hud.UpdateCharge(_chargeRatio, _isCharging);
+    }
+
+    private void UpdateLocalHudHealth(int currentHp)
+    {
+        if (!isLocalPlayer || hud == null) return;
+
+        hud.UpdateHP(currentHp, maxHp);
+    }
+
+    private void UpdateLocalHudCharge()
+    {
+        if (!isLocalPlayer || hud == null) return;
+
+        hud.UpdateCharge(_chargeRatio, _isCharging);
     }
 
     private void SubscribeEquipmentStats()
@@ -280,6 +308,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             ApplyServerHpAfterMaxHpChanged(previousMaxHp);
 
         _worldHealthBar?.UpdateHP(_hp, maxHp);
+        UpdateLocalHudHealth(_hp);
     }
 
     [Server]
@@ -307,6 +336,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _playerInput.enabled = true;
         _motor.enabled = true;
         _worldHealthBar?.UpdateHP(_hp, maxHp);
+        UpdateLocalHudHealth(_hp);
+        UpdateLocalHudCharge();
 
         if (NetworkClient.ready)
         {
@@ -333,6 +364,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         UpdateState();
         UpdateMovement();
         UpdateAnimation();
+        UpdateLocalHudCharge();
         SyncAnimationToServer();
     }
 
@@ -345,6 +377,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             controlModeController = GetComponent<PlayerControlModeController>();
 
         controlModeController?.ToggleAssemblyMode();
+        hud?.ToggleBackpack();
     }
 
     public void SetGameplayInputEnabled(bool enabledValue)
@@ -365,6 +398,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         ResetLocalGameplayInput();
         UpdateAnimation();
+        UpdateLocalHudCharge();
     }
 
     private void ResetLocalGameplayInput()
@@ -732,6 +766,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void OnHpChanged(int oldHp, int newHp)
     {
         _worldHealthBar?.UpdateHP(newHp, maxHp);
+        UpdateLocalHudHealth(newHp);
     }
 
     private void OnSyncSpeedXChanged(float oldVal, float newVal)
@@ -822,7 +857,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Jump:
                 _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
-                PlaySound(_jumpSound);
+                PlaySound(_jumpSound,0.5f);
                 break;
             case PlayerPose.Fall:
                 _animator.CrossFadeInFixedTime("Fall", 0.15f);
@@ -830,21 +865,21 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Attack:
                 _animator.CrossFadeInFixedTime("Attack", 0.05f);
                 _canChangeState = false;
-                PlaySound(_attackSound, 2f);
+                PlaySound(_attackSound, 0.5f);
                 break;
             case PlayerPose.Hit:
                 _animator.CrossFadeInFixedTime("hurt", 0.1f);
                 _canChangeState = false;
-                PlaySound(_hitSound);
+                PlaySound(_hitSound, 0.5f);
                 break;
             case PlayerPose.Die:
                 _animator.CrossFadeInFixedTime("死亡", 0.1f);
                 _canChangeState = false;
-                PlaySound(_dieSound);
+                PlaySound(_dieSound, 0.5f);
                 break;
             case PlayerPose.Dash:
                 _animator.CrossFadeInFixedTime(GetDashAnimName(), 0.05f);
-                PlaySound(_dashSound);
+                PlaySound(_dashSound, 0.5f);
                 break;
         }
     }
@@ -997,6 +1032,9 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void RpcOnDie()
     {
         ChangeState(PlayerPose.Die);
+
+        if (isLocalPlayer && hud != null)
+            hud.ShowGameOver();
     }
 
     public void OnMove(InputValue value)

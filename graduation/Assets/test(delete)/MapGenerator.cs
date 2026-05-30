@@ -204,6 +204,25 @@ public class MapGenerator : MonoBehaviour
         return b;
     }
 
+    public Vector3 GetMapCenter()
+    {
+        if (spawnedMaps == null || spawnedMaps.Count == 0)
+            return transform.position;
+
+        float sumX = 0f, sumZ = 0f;
+        int count = 0;
+        foreach (var tile in spawnedMaps)
+        {
+            if (tile == null) continue;
+            sumX += tile.transform.position.x;
+            sumZ += tile.transform.position.z;
+            count++;
+        }
+        return count > 0
+            ? new Vector3(sumX / count, transform.position.y, sumZ / count)
+            : transform.position;
+    }
+
     public void ClearOldMaps()
     {
 #if UNITY_EDITOR

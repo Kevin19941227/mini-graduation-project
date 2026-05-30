@@ -43,6 +43,21 @@ public class ZoneController : NetworkBehaviour
         base.OnStartServer();
         _currentRadius = initialRadius;
         _zoneCenter = transform.position;
+
+        if (MapGenerator.IsNavMeshReady)
+            InitZoneCenter();
+        else
+            MapGenerator.OnNavMeshReady += InitZoneCenter;
+    }
+
+    private void InitZoneCenter()
+    {
+        MapGenerator.OnNavMeshReady -= InitZoneCenter;
+
+        MapGenerator mapGen = FindObjectOfType<MapGenerator>();
+        if (mapGen != null)
+            _zoneCenter = mapGen.GetMapCenter();
+
         StartCoroutine(ZoneRoutine());
     }
 

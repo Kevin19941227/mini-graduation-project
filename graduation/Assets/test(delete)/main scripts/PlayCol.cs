@@ -851,13 +851,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 {
                     _audioSource.clip = _chargeSound;
                     _audioSource.loop = true;
+                    _audioSource.volume = 0.5f;
                     _audioSource.Play();
                 }
                 break;
             case PlayerPose.Jump:
                 _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
-                PlaySound(_jumpSound,0.5f);
+                PlaySound(_jumpSound, 0.25f);
                 break;
             case PlayerPose.Fall:
                 _animator.CrossFadeInFixedTime("Fall", 0.15f);
@@ -865,7 +866,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Attack:
                 _animator.CrossFadeInFixedTime("Attack", 0.05f);
                 _canChangeState = false;
-                PlaySound(_attackSound, 0.5f);
+                PlaySound(_attackSound, 0.25f);
                 break;
             case PlayerPose.Hit:
                 _animator.CrossFadeInFixedTime("hurt", 0.1f);

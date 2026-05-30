@@ -401,7 +401,7 @@ public class MonsterAI : NetworkBehaviour
         StopAgent();
         PlayAnimation(AnimatorIds.AttackState);
         SetSpeed(0f);
-        PlaySound(_attackSound);
+        PlaySound(_attackSound, 0.5f);
     }
 
     private void FinishHurt()

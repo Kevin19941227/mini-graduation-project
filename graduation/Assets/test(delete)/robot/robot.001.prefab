@@ -118,6 +118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hpFillImage: {fileID: 177046025802853838}
+  hpValueText: {fileID: 0}
   offset: {x: 0, y: 2.5, z: 0}
 --- !u!1 &4728726902868388248
 GameObject:
@@ -253,7 +254,7 @@ Transform:
   m_GameObject: {fileID: 5582578482103758291}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3.25, y: 32, z: 4}
+  m_LocalPosition: {x: -3.25, y: 86, z: 4}
   m_LocalScale: {x: 50, y: 200, z: 50}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1145,6 +1146,7 @@ MonoBehaviour:
   syncInterval: 0
   playerNameText: {fileID: 8627226868648088330}
   _worldHealthBar: {fileID: 6650387402169718816}
+  hud: {fileID: 0}
   _audioSource: {fileID: 1155162941119803027}
   _attackSound: {fileID: 8300000, guid: a01f017b8d0fd7e4aa3fd5aad90690a1, type: 3}
   _chargeSound: {fileID: 8300000, guid: 3a79563f2770166408c4d8921f9caae1, type: 3}

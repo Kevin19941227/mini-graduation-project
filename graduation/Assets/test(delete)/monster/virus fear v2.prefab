@@ -245,6 +245,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hpFillImage: {fileID: 2603899052743216234}
+  hpValueText: {fileID: 0}
   offset: {x: 0, y: 2.5, z: 0}
 --- !u!1 &4279537926372200459
 GameObject:
@@ -566,7 +567,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _audioSource: {fileID: 3432145209110600769}
-  _attackSound: {fileID: 8300000, guid: 1f13a57f6097afa44b664c802e571c0e, type: 3}
+  _attackSound: {fileID: 8300000, guid: d37a8701f04243149b91968c8ccc5e27, type: 3}
   _hurtSound: {fileID: 8300000, guid: b9e876b50e340a244a7a789fca12cc75, type: 3}
   _dieSound: {fileID: 8300000, guid: 36d89a9b4e71e244eb0f356d75765395, type: 3}
   maxHealth: 50

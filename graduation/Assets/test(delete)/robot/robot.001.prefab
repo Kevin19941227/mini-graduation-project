@@ -379,7 +379,7 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 1
+  m_Volume: 0.995
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -1073,7 +1073,7 @@ MonoBehaviour:
   hud: {fileID: 0}
   _audioSource: {fileID: 1155162941119803027}
   _attackSound: {fileID: 8300000, guid: a01f017b8d0fd7e4aa3fd5aad90690a1, type: 3}
-  _chargeSound: {fileID: 8300000, guid: 3a79563f2770166408c4d8921f9caae1, type: 3}
+  _chargeSound: {fileID: 8300000, guid: 21bada1eb7236b8469a4372913224b9c, type: 3}
   _jumpSound: {fileID: 8300000, guid: 95fa7858e2b372b4493ff655eaa028cc, type: 3}
   _hitSound: {fileID: 8300000, guid: a89c8aba68399004487211c1c48d9a8b, type: 3}
   _dieSound: {fileID: 8300000, guid: 96762acc434fed54c94b92a196bdd6ca, type: 3}
@@ -1088,7 +1088,7 @@ MonoBehaviour:
   dashDistance: 7
   dashDuration: 0.8
   chargeMoveSpeedMultiplier: 0.4
-  dashSpeed: 5
+  dashSpeed: 7
   dashTime: 1
   dashTapThreshold: 0.2
   attackRadius: 1.5

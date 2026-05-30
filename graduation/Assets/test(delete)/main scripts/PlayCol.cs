@@ -872,7 +872,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Hit:
                 _animator.CrossFadeInFixedTime("hurt", 0.1f);
                 _canChangeState = false;
-                PlaySound(_hitSound, 0.5f);
+                PlaySound(_hitSound, 0.25f);
                 break;
             case PlayerPose.Die:
                 _animator.CrossFadeInFixedTime("死亡", 0.1f);
@@ -881,7 +881,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 break;
             case PlayerPose.Dash:
                 _animator.CrossFadeInFixedTime(GetDashAnimName(), 0.05f);
-                PlaySound(_dashSound, 0.5f);
+                PlaySound(_dashSound, 0.25f);
                 break;
         }
     }

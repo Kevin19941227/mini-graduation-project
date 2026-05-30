@@ -464,6 +464,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             {
                 _audioSource.loop = false;
                 _audioSource.Stop();
+                _audioSource.volume = 1f;
             }
             _isCharging = false;
             _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);

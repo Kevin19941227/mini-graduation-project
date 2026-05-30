@@ -543,7 +543,7 @@ public class MonsterAI : NetworkBehaviour
         _hurtTimer = GetHurtLockDuration();
         StopAgent();
         SetSpeed(0f);
-        PlaySound(_hurtSound, 0.5f);
+        PlaySound(_hurtSound, 0.25f);
         if (_animator != null && _animator.HasState(BaseLayerIndex, _hurtStateHash))
         {
             PlayAnimation(_hurtStateHash);

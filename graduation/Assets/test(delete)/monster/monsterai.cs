@@ -25,7 +25,11 @@ public class MonsterAI : NetworkBehaviour
     }
 
     #region Inspector Settings
-
+    [Header("音效設定")]
+    [SerializeField] private AudioSource _audioSource;
+    [SerializeField] private AudioClip _attackSound;
+    [SerializeField] private AudioClip _hurtSound;
+    [SerializeField] private AudioClip _dieSound;
     [Header("Combat")]
     [SerializeField, Min(1)] private int maxHealth = 50;
     [SerializeField] private MonsterData monsterData;
@@ -88,6 +92,7 @@ public class MonsterAI : NetworkBehaviour
 
     private void Awake()
     {
+        _audioSource = GetComponentInChildren<AudioSource>();
         _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
         _networkIdentity = GetComponent<NetworkIdentity>();
@@ -99,7 +104,11 @@ public class MonsterAI : NetworkBehaviour
 
         ConfigureNetworkSyncComponents();
     }
-
+    private void PlaySound(AudioClip clip, float volume = 1f)
+    {
+        if (_audioSource == null || clip == null) return;
+        _audioSource.PlayOneShot(clip, volume);
+    }
     private void EnsureRuntimeHitbox()
     {
         Collider[] colliders = GetComponentsInChildren<Collider>();
@@ -392,6 +401,7 @@ public class MonsterAI : NetworkBehaviour
         StopAgent();
         PlayAnimation(AnimatorIds.AttackState);
         SetSpeed(0f);
+        PlaySound(_attackSound);
     }
 
     private void FinishHurt()
@@ -533,7 +543,7 @@ public class MonsterAI : NetworkBehaviour
         _hurtTimer = GetHurtLockDuration();
         StopAgent();
         SetSpeed(0f);
-
+        PlaySound(_hurtSound);
         if (_animator != null && _animator.HasState(BaseLayerIndex, _hurtStateHash))
         {
             PlayAnimation(_hurtStateHash);
@@ -576,7 +586,7 @@ public class MonsterAI : NetworkBehaviour
             NetworkServer.Destroy(gameObject);
             return;
         }
-
+        PlaySound(_dieSound);
         Destroy(gameObject);
     }
 

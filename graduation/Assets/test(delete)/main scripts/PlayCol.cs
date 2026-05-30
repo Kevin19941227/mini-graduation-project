@@ -22,6 +22,16 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [SerializeField] private TextMesh playerNameText;
     [SerializeField] private WorldHealthBar _worldHealthBar;
 
+    [Header("音效設定")]
+    [SerializeField] private AudioSource _audioSource;
+    [SerializeField] private AudioClip _attackSound;
+    [SerializeField] private AudioClip _chargeSound;
+    [SerializeField] private AudioClip _jumpSound;
+    [SerializeField] private AudioClip _hitSound;
+    [SerializeField] private AudioClip _dieSound;
+    [SerializeField] private AudioClip _dashSound;
+    [SerializeField] private AudioClip _runSound;
+
     [SyncVar(hook = nameof(OnNameChanged))]
     private string playerName;
 
@@ -172,6 +182,27 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _runSpeedMultiplier = walkSpeed > 0f ? runSpeed / walkSpeed : FALLBACK_RUN_SPEED_MULTIPLIER;
         _motor.CharacterController = this;
         ConfigureNetworkSyncComponents();
+        _audioSource = GetComponentInChildren<AudioSource>();
+    }
+
+    private void PlaySound(AudioClip clip, float volume = 1f)
+    {
+        if (!isLocalPlayer) return;
+        if (_audioSource == null || clip == null) return;
+        _audioSource.PlayOneShot(clip, volume);
+    }
+
+    [Server]
+    public void TakeZoneDamage(int damage)
+    {
+        if (_hp <= 0) return;
+
+        _hp -= damage;
+        if (_hp <= 0)
+        {
+            _hp = 0;
+            RpcOnDie();
+        }
     }
 
     private void ConfigureNetworkSyncComponents()
@@ -195,7 +226,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _playerInput = GetComponent<PlayerInput>();
         SubscribeEquipmentStats();
 
-        // 所有玩家都初始化頭上血條
         if (_worldHealthBar != null)
             _worldHealthBar.Init(transform);
 
@@ -249,7 +279,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (isServer)
             ApplyServerHpAfterMaxHpChanged(previousMaxHp);
 
-        // 裝備更新時同步血條
         _worldHealthBar?.UpdateHP(_hp, maxHp);
     }
 
@@ -277,8 +306,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         _playerInput.enabled = true;
         _motor.enabled = true;
-
-        // 地圖就緒後初始化血條顯示
         _worldHealthBar?.UpdateHP(_hp, maxHp);
 
         if (NetworkClient.ready)
@@ -399,6 +426,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (_isCharging && _currentPose == PlayerPose.Charging
             && !Mouse.current.leftButton.isPressed)
         {
+            if (_audioSource != null)
+            {
+                _audioSource.loop = false;
+                _audioSource.Stop();
+            }
             _isCharging = false;
             _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
             _dashDirection = _moveDirection != Vector3.zero
@@ -450,7 +482,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             }
 
             if (_currentPose == PlayerPose.Fall || _currentPose == PlayerPose.Jump)
+            {
+                _moveState = MoveState.Idle; // ← 落地時重置，讓 UpdateMoveState 正確偵測變化
                 ChangeState(PlayerPose.Grounded);
+            }
 
             if (_currentPose == PlayerPose.Charging && !_isCharging)
                 ChangeState(PlayerPose.Grounded);
@@ -514,9 +549,39 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (previousState != _moveState)
         {
             if (_moveState == MoveState.Idle)
+            {
                 _animator.CrossFadeInFixedTime("idle", 0.15f);
+                if (_audioSource != null && _audioSource.clip == _runSound)
+                {
+                    _audioSource.loop = false;
+                    _audioSource.Stop();
+                }
+            }
             else if (_moveState == MoveState.Walk || _moveState == MoveState.Run)
+            {
                 _animator.CrossFadeInFixedTime("move", 0.15f);
+
+                if (_moveState == MoveState.Run && _runSound != null && _audioSource != null)
+                {
+                    _audioSource.clip = _runSound;
+                    _audioSource.loop = true;
+                    _audioSource.Play();
+                }
+                else if (_moveState == MoveState.Walk && _audioSource != null
+                         && _audioSource.clip == _runSound)
+                {
+                    _audioSource.loop = false;
+                    _audioSource.Stop();
+                }
+            }
+            else if (_moveState == MoveState.Stop)
+            {
+                if (_audioSource != null && _audioSource.clip == _runSound)
+                {
+                    _audioSource.loop = false;
+                    _audioSource.Stop();
+                }
+            }
         }
     }
 
@@ -664,7 +729,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         ApplyPoseToAnimator(newPose);
     }
 
-    // 血量變化時更新頭上血條（所有客戶端都會收到）
     private void OnHpChanged(int oldHp, int newHp)
     {
         _worldHealthBar?.UpdateHP(newHp, maxHp);
@@ -748,10 +812,17 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                     _animator.CrossFadeInFixedTime("Charging", 0.15f);
                 else
                     _animator.Play("Charging", 0, 4f / 30f);
+                if (_audioSource != null && _chargeSound != null)
+                {
+                    _audioSource.clip = _chargeSound;
+                    _audioSource.loop = true;
+                    _audioSource.Play();
+                }
                 break;
             case PlayerPose.Jump:
                 _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
+                PlaySound(_jumpSound);
                 break;
             case PlayerPose.Fall:
                 _animator.CrossFadeInFixedTime("Fall", 0.15f);
@@ -759,23 +830,29 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Attack:
                 _animator.CrossFadeInFixedTime("Attack", 0.05f);
                 _canChangeState = false;
+                PlaySound(_attackSound, 2f);
                 break;
             case PlayerPose.Hit:
                 _animator.CrossFadeInFixedTime("hurt", 0.1f);
                 _canChangeState = false;
+                PlaySound(_hitSound);
                 break;
             case PlayerPose.Die:
                 _animator.CrossFadeInFixedTime("死亡", 0.1f);
                 _canChangeState = false;
+                PlaySound(_dieSound);
                 break;
             case PlayerPose.Dash:
                 _animator.CrossFadeInFixedTime(GetDashAnimName(), 0.05f);
+                PlaySound(_dashSound);
                 break;
         }
     }
 
     public void OnActionComplete()
     {
+        if (_currentPose == PlayerPose.Die) return;
+
         _attackFired = false;
         _canChangeState = true;
         ChangeState(PlayerPose.Grounded);
@@ -967,6 +1044,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         {
             if (_isCharging)
             {
+                if (_audioSource != null)
+                {
+                    _audioSource.loop = false;
+                    _audioSource.Stop();
+                }
                 _isCharging = false;
                 _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
                 _dashDirection = _moveDirection != Vector3.zero

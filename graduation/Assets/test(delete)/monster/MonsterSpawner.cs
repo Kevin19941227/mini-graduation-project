@@ -19,6 +19,18 @@ public class MonsterSpawner : NetworkBehaviour
     [SerializeField, Min(0.1f)] private float navMeshSampleDistance = 4f;
     [SerializeField, Min(1)] private int monstersPerFrame = 1;
 
+    [Header("Spawn Validation")]
+    [Tooltip("是否限制生成高度，用來避免怪物出現在屋頂（需先確認地面實際 Y 高度再開啟）")]
+    [SerializeField] private bool useHeightConstraint = false;
+    [Tooltip("允許生成的最大 Y 高度（地面通常在 0 附近，依實際場景調整）")]
+    [SerializeField] private float maxSpawnHeight = 2f;
+    [Tooltip("建築物所在的 Layer，用射線偵測是否在建築物內部或屋頂（設為 Nothing 則停用）")]
+    [SerializeField] private LayerMask obstacleLayerMask = 0;
+    [Tooltip("往上射線的最大距離，用來偵測天花板（建築物內部）")]
+    [SerializeField, Min(1f)] private float ceilingCheckDistance = 50f;
+    [Tooltip("往下射線的距離，用來偵測腳下是否為建築物屋頂")]
+    [SerializeField, Min(0.1f)] private float rooftopCheckDistance = 1.5f;
+
     #endregion
 
     #region Runtime State
@@ -204,13 +216,44 @@ public class MonsterSpawner : NetworkBehaviour
 
             if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, navMeshSampleDistance, NavMesh.AllAreas))
             {
-                position = hit.position;
-                return true;
+                if (IsValidSpawnPosition(hit.position))
+                {
+                    position = hit.position;
+                    return true;
+                }
             }
         }
 
         position = Vector3.zero;
         return false;
+    }
+
+    private bool IsValidSpawnPosition(Vector3 position)
+    {
+        if (useHeightConstraint && position.y > maxSpawnHeight)
+        {
+            Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：高度 {position.y:F1} > maxSpawnHeight {maxSpawnHeight}");
+            return false;
+        }
+
+        if (obstacleLayerMask != 0)
+        {
+            // 往上射線：打到天花板 → 在建築物內部
+            if (Physics.Raycast(position + Vector3.up * 0.05f, Vector3.up, ceilingCheckDistance, obstacleLayerMask))
+            {
+                Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：上方有建築物天花板（在內部）");
+                return false;
+            }
+
+            // 往下射線：腳下就是建築物表面 → 站在屋頂
+            if (Physics.Raycast(position + Vector3.up * 0.5f, Vector3.down, rooftopCheckDistance, obstacleLayerMask))
+            {
+                Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：腳下是建築物屋頂");
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool HasReadableNavMesh()

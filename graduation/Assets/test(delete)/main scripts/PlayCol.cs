@@ -851,14 +851,14 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 {
                     _audioSource.clip = _chargeSound;
                     _audioSource.loop = true;
-                    _audioSource.volume = 0.5f;
+                    _audioSource.volume = 0.25f;
                     _audioSource.Play();
                 }
                 break;
             case PlayerPose.Jump:
                 _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
-                PlaySound(_jumpSound, 0.25f);
+                PlaySound(_jumpSound, 0.19f);
                 break;
             case PlayerPose.Fall:
                 _animator.CrossFadeInFixedTime("Fall", 0.15f);

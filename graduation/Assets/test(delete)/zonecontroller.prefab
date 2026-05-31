@@ -45,6 +45,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1084b358229f7f4bbf03bdc05e1e566, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  initialRadius: 100
+  finalRadius: 5
+  shrinkDelay: 30
+  shrinkDuration: 60
+  damageInterval: 1
+  damagePerTick: 1
+  lineSegments: 64
+  zoneColor: {r: 0, g: 0, b: 1, a: 1}
+  lineWidth: 0.5
 --- !u!114 &3414301824724449698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58,7 +70,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sceneId: 0
-  _assetId: 0
+  _assetId: 1627045379
   serverOnly: 0
   visibility: 0
   hasSpawned: 0

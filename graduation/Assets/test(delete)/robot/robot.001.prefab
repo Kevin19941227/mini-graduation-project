@@ -1103,6 +1103,9 @@ MonoBehaviour:
   cameraShakeStrength: 0.3
   hitInvincibilityDuration: 0.5
   impulseSource: {fileID: -6235521836210514210}
+  hitEffectPrefab: {fileID: 8021892516405230972, guid: 1c3ff2f0f67ac1b4c89cddbc755c19da,
+    type: 3}
+  hitEffectLifetime: 2
   controlModeController: {fileID: 3955687603713781639}
   assemblyModeKey: 16
   equipmentStatsController: {fileID: 0}

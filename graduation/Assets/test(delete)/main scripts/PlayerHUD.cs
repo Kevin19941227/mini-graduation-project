@@ -90,11 +90,8 @@ public class PlayerHUD : MonoBehaviour
             _canvas.sortingOrder = Mathf.Max(_canvas.sortingOrder, RuntimeSortingOrder);
         }
 
-        EnsureBackpackPanel();
         ResetHud();
     }
-
-
 
     /// <summary>Updates the screen-space HP bar for the local player.</summary>
     public void UpdateHP(int current, int max)
@@ -163,8 +160,6 @@ public class PlayerHUD : MonoBehaviour
     /// <summary>Toggles the local backpack panel visibility.</summary>
     public void ToggleBackpack()
     {
-        EnsureBackpackPanel();
-
         if (backpackPanel != null)
             backpackPanel.SetActive(!backpackPanel.activeSelf);
     }
@@ -172,8 +167,6 @@ public class PlayerHUD : MonoBehaviour
     /// <summary>Sets the local backpack panel visibility.</summary>
     public void SetBackpackVisible(bool isVisible)
     {
-        EnsureBackpackPanel();
-
         if (backpackPanel != null)
             backpackPanel.SetActive(isVisible);
     }
@@ -318,48 +311,6 @@ public class PlayerHUD : MonoBehaviour
     #endregion
 
     #region Backpack UI
-
-    private void EnsureBackpackPanel()
-    {
-        if (backpackPanel != null) return;
-
-        RectTransform parent = transform as RectTransform;
-        if (parent == null) return;
-
-        GameObject panel = CreateRect(parent, "Backpack_Panel",
-            new Vector2(0.5f, 0.5f),
-            new Vector2(0.5f, 0.5f),
-            new Vector2(0.5f, 0.5f),
-            Vector2.zero,
-            new Vector2(BackpackPanelWidth, BackpackPanelHeight));
-
-        Image panelImage = panel.AddComponent<Image>();
-        panelImage.color = new Color(0.04f, 0.05f, 0.06f, 0.92f);
-        panelImage.raycastTarget = true;
-
-        CreateText(panel.transform, "Backpack_Title", "Backpack",
-            new Vector2(0f, 1f),
-            new Vector2(1f, 1f),
-            new Vector2(0.5f, 1f),
-            new Vector2(0f, -28f),
-            new Vector2(0f, 48f),
-            BackpackTitleFontSize,
-            TextAnchor.MiddleCenter,
-            Color.white);
-
-        CreateText(panel.transform, "Backpack_Empty_Text", "No backpack UI is assigned yet.",
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(0.5f, 0.5f),
-            Vector2.zero,
-            new Vector2(-48f, -120f),
-            BackpackHintFontSize,
-            TextAnchor.MiddleCenter,
-            new Color(0.78f, 0.84f, 0.9f, 1f));
-
-        backpackPanel = panel;
-        backpackPanel.SetActive(false);
-    }
 
     private static GameObject CreateRect(Transform parent, string objectName, Vector2 anchorMin, Vector2 anchorMax,
         Vector2 pivot, Vector2 anchoredPosition, Vector2 sizeDelta)

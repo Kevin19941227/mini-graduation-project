@@ -988,6 +988,73 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 656159980}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &760631363
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 760631366}
+  - component: {fileID: 760631365}
+  - component: {fileID: 760631364}
+  m_Layer: 0
+  m_Name: PKFxRenderingManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &760631364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760631363}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c9c7dd18272f47048805214b40de033, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_UseSceneMesh: 0
+  m_SceneMesh: {fileID: 0}
+  m_TimeMultiplier: 1
+  m_Cameras: []
+  m_PreloadEffect: []
+  m_OutputPkmmPath: Meshes/UnityScene.pkmm
+  m_GameObjectsToSearch: []
+  m_MeshGameObjects: []
+  m_CameraLayers: 1f0000001e000000
+--- !u!114 &760631365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760631363}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f75a25e2338e5914ba80577392695208, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_MinimumLogLevel: 0
+--- !u!4 &760631366
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 760631363}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &784006898
 GameObject:
   m_ObjectHideFlags: 0
@@ -1623,6 +1690,7 @@ GameObject:
   - component: {fileID: 1776971882}
   - component: {fileID: 1776971885}
   - component: {fileID: 1776971886}
+  - component: {fileID: 1776971887}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1782,6 +1850,19 @@ MonoBehaviour:
   m_CameraActivatedEvent:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1776971887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1776971881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 437ac3cbe2bd24ab296e2658b93a133a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_CameraID: -1
 --- !u!1 &1913010439
 GameObject:
   m_ObjectHideFlags: 0
@@ -2233,3 +2314,4 @@ SceneRoots:
   - {fileID: 605253677}
   - {fileID: 75919010}
   - {fileID: 622417028}
+  - {fileID: 760631366}

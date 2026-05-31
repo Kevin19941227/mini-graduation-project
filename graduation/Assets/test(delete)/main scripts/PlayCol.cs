@@ -154,6 +154,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private const float NETWORK_TRANSFORM_SYNC_INTERVAL = 0.05f;
     private const float FALLBACK_RUN_SPEED_MULTIPLIER = 1f;
     private const int MIN_DAMAGE_AFTER_DEFENSE = 1;
+    private const string SurvivalMatchLogPrefix = "[SurvivalMatch]";
 
     private PlayerPose _lastSentPose = PlayerPose.Grounded;
     private float _lastSentSpeedX;
@@ -170,9 +171,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private float _jumpStartTime = -1f;
     private const float MIN_JUMP_AIRTIME = 0.15f;
     private bool _gameplayInputEnabled = true;
+    private bool _hasReportedDeathToMatch;
 
     private float _stopAnimTimer = 0f;
     private const float MAX_STOP_ANIM_DURATION = 1.2f;
+
+    public bool IsDead => _hp <= 0 || _currentPose == PlayerPose.Die;
 
     void Awake()
     {
@@ -202,7 +206,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (_hp <= 0)
         {
             _hp = 0;
-            RpcOnDie();
+            ServerHandleDeath();
         }
     }
 
@@ -245,6 +249,18 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         }
     }
 
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        SurvivalMatchController.EnsureServerInstance()?.ServerRegisterPlayer(this);
+    }
+
+    public override void OnStopServer()
+    {
+        SurvivalMatchController.GetServerInstance()?.ServerUnregisterPlayer(this);
+        base.OnStopServer();
+    }
+
     private void OnDestroy()
     {
         UnsubscribeEquipmentStats();
@@ -253,7 +269,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private void InitializeLocalHud()
     {
         if (hud == null)
-            hud = FindObjectOfType<PlayerHUD>();
+            hud = PlayerHUD.GetOrCreateRuntimeHud();
 
         if (hud == null) return;
 
@@ -350,6 +366,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     void Update()
     {
+        UpdateServerDeathWatch();
+
         if (!isLocalPlayer) return;
 
         HandleControlModeToggleInput();
@@ -366,6 +384,18 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         UpdateAnimation();
         UpdateLocalHudCharge();
         SyncAnimationToServer();
+    }
+
+    [ServerCallback]
+    private void UpdateServerDeathWatch()
+    {
+        if (_hp > 0 || _hasReportedDeathToMatch)
+        {
+            return;
+        }
+
+        Debug.Log($"{SurvivalMatchLogPrefix} Server death watch caught netId={netId}, hp={_hp}.");
+        ServerHandleDeath();
     }
 
     private void HandleControlModeToggleInput()
@@ -768,6 +798,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         _worldHealthBar?.UpdateHP(newHp, maxHp);
         UpdateLocalHudHealth(newHp);
+
+        if (isServer && newHp <= 0 && !_hasReportedDeathToMatch)
+        {
+            Debug.Log($"{SurvivalMatchLogPrefix} HP hook caught death netId={netId}, oldHp={oldHp}, newHp={newHp}.");
+            ServerHandleDeath();
+        }
     }
 
     private void OnSyncSpeedXChanged(float oldVal, float newVal)
@@ -991,6 +1027,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Server]
     public void TakeDamage(int damage, Vector3 attackerForward)
     {
+        if (_hp <= 0) return;
         if (_currentPose == PlayerPose.Dash) return;
 
         if (Time.time < _serverInvincibilityEndTime) return;
@@ -1001,12 +1038,26 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (_hp <= 0)
         {
             _hp = 0;
-            RpcOnDie();
+            ServerHandleDeath();
         }
         else
         {
             RpcOnHit(attackerForward);
         }
+    }
+
+    [Server]
+    private void ServerHandleDeath()
+    {
+        if (_hasReportedDeathToMatch)
+        {
+            return;
+        }
+
+        _hasReportedDeathToMatch = true;
+        Debug.Log($"{SurvivalMatchLogPrefix} Player death reported netId={netId}, name={name}.");
+        RpcOnDie();
+        SurvivalMatchController.EnsureServerInstance()?.ServerReportPlayerDied(this);
     }
 
     [ClientRpc]
@@ -1035,8 +1086,45 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         ChangeState(PlayerPose.Die);
 
+        if (isLocalPlayer && hud == null)
+            hud = PlayerHUD.GetOrCreateRuntimeHud();
+
         if (isLocalPlayer && hud != null)
             hud.ShowGameOver();
+    }
+
+    [ClientRpc]
+    public void RpcShowMatchResult(uint winnerNetId)
+    {
+        if (!isLocalPlayer)
+        {
+            return;
+        }
+
+        if (hud == null)
+        {
+            hud = PlayerHUD.GetOrCreateRuntimeHud();
+        }
+
+        bool isWinner = netId == winnerNetId;
+        hud?.ShowResult(isWinner, RequestReturnToLobby, isServer);
+        SetGameplayInputEnabled(false);
+    }
+
+    private void RequestReturnToLobby()
+    {
+        if (!isLocalPlayer || !NetworkClient.active || !NetworkClient.ready)
+        {
+            return;
+        }
+
+        CmdRequestReturnToLobby();
+    }
+
+    [Command]
+    private void CmdRequestReturnToLobby()
+    {
+        SurvivalMatchController.GetServerInstance()?.ServerRequestReturnToLobby(this);
     }
 
     public void OnMove(InputValue value)

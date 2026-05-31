@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06aefacb9ec589f48b23f0cd1d2992b3, type: 3}
+  m_Name: MotionMonsterData
+  m_EditorClassIdentifier: 
+  monsterID: 300
+  monsterName: Motion
+  maxHP: 100
+  attack: 25
+  moveSpeed: 6
+  defense: 10
+  attackRange: 2
+  attackInterval: 1.2
+  aiType: 0
+  dropTableID: 300
+  monsterPrefab: {fileID: 3607562850829040265, guid: 898ce263dec8ddf4188cedbc750f6286,
+    type: 3}

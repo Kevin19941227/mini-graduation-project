@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8789630634995165738
+--- !u!114 &-7179916435918807411
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20,22 +20,20 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 1dcbaf42cd254df5fc1a17da334ff0e5
+  m_Name: c9f2aaa453800be90aff80609eb45f08
   m_Shader: {fileID: -6465566751694194690, guid: d7778b0a4eea64e42b0ce819b3b6cf6a,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - PK_HAS_EMISSIVE_NONE
+  - PK_HAS_EMISSIVE_BASIC
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords:
-  - PK_HAS_DIFFUSE_MAP
-  - PK_HAS_DIFFUSE_MAP_ON
-  - PK_HAS_EMISSIVE_NONE_ON
+  - PK_HAS_EMISSIVE_BASIC_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3500
+  m_CustomRenderQueue: -1
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
@@ -65,7 +63,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissiveMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 4069ec284c109854a97a8aca00ed3891, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _EmissiveRampMap:
@@ -73,7 +71,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 455eeb143f9ff8c47b00b7b7fd65a8f6, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _UVDistortionsTex1:
@@ -104,7 +102,7 @@ Material:
     - PK_HAS_ATLAS: 0
     - PK_HAS_DIFFUSE_RAMP: 0
     - PK_HAS_DISSOLVE: 0
-    - PK_HAS_EMISSIVE: 0
+    - PK_HAS_EMISSIVE: 1
     - PK_HAS_ROTATE_UVS: 0
     - PK_HAS_SOFT: 0
     - PK_HAS_TRANSFORM_UVS: 0

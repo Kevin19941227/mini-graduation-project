@@ -46,6 +46,7 @@ CEditorAssetEntryDir	$4ADE8DE2
 		"$A1CAADB2",
 		"$47461CE0",
 		"$3F47CEDC",
+		"$6F166E32",
 	};
 }
 CEditorAssetEntryDir	$D279714D
@@ -63,7 +64,7 @@ CEditorAssetEntryDir	$5F621394
 	InternalIndexedLastModifiedTime = uint2(414, 2059708230);
 	Assets = {
 		"$1A05FF77",
-		"$78A74806",
+		"$6463D025",
 	};
 	CB_Expanded = true;
 }
@@ -73,6 +74,7 @@ CEditorAssetEntryDir	$41E5AFE7
 	InternalIndexedLastModifiedTime = uint2(414, 2059117578);
 	Assets = {
 		"$BEDF8936",
+		"$BFCB68BA",
 	};
 }
 CEditorAssetEntryDir	$BEDF8936
@@ -309,32 +311,6 @@ CEditorAssetEntryEffect	$1A05FF77
 	LayersData = 3;
 	NodeGraphCountData = 1;
 	InstructionCountData = 109;
-	LanguagesData = "eng";
-	NodeStatsCountData = 2;
-}
-CEditorAssetEntryEffect	$78A74806
-{
-	Filename = "FX_Simple.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814808);
-	AssetDependencies = {
-		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
-		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
-		"Library/PopcornFXCore/Templates/Events.pkfx",
-		"Library/PopcornFXCore/Templates/Core.pkfx",
-		"Library/PopcornFXCore/Templates/Color.pkfx",
-		"Library/PopcornFXCore/Templates/Utils.pkfx",
-		"Library/PopcornFXCore/Materials/DefaultTextures/Diffuse.dds",
-	};
-	IndexedFileSize = 33214;
-	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916216);
-	IndexedFileVersion = "2.20.1.21981";
-	Description = {
-		"@eng:<b>Fountain effect</b>, indefinitely spawns a vertical rising stream of particles, falling back down under gravity.\\nInfinite effect.",
-	};
-	LayersData = 3;
-	NodeGraphCountData = 1;
-	InstructionCountData = 153;
 	LanguagesData = "eng";
 	NodeStatsCountData = 2;
 }
@@ -28098,6 +28074,8 @@ CEditorAssetEntryDir	$47461CE0
 	InternalIndexedLastModifiedTime = uint2(414, 2059117512);
 	Assets = {
 		"$0F068D23",
+		"$0FF613D6",
+		"$9616EE69",
 	};
 }
 CEditorAssetEntryDir	$0F068D23
@@ -28211,40 +28189,21 @@ CEditorAssetEntryTexture	$CF6961B3
 CEditorAssetEntryDir	$4C02D122
 {
 	Filename = "Content";
-	InternalIndexedLastModifiedTime = uint2(414, 2100101836);
+	InternalIndexedLastModifiedTime = uint2(414, 2118734840);
 	Assets = {
-		"$06C5558D",
+		"$21E38D9D",
+		"$AADD07E3",
+		"$225DF45F",
 	};
 	CB_Expanded = true;
-}
-CEditorAssetEntryEffect	$06C5558D
-{
-	Filename = "sparks.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2100101833);
-	AssetDependencies = {
-		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
-		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
-		"Library/PopcornFXCore/Templates/Events.pkfx",
-		"Library/PopcornFXCore/Templates/Core.pkfx",
-		"Textures/—Pngtree—light effect glow_6320136.png",
-	};
-	IndexedFileSize = 27113;
-	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2100122847);
-	IndexedFileVersion = "2.20.13.26695";
-	LayersData = 3;
-	NodeGraphCountData = 1;
-	InstructionCountData = 139;
-	LanguagesData = "eng";
-	NodeStatsCountData = 2;
 }
 CEditorAssetEntryDir	$D92DACD4
 {
 	Filename = "Textures";
-	InternalIndexedLastModifiedTime = uint2(414, 2100113924);
+	InternalIndexedLastModifiedTime = uint2(414, 2101003539);
 	Assets = {
 		"$DBA0A227",
-		"$7A204876",
+		"$F21A0E56",
 	};
 	CB_Expanded = true;
 }
@@ -28255,10 +28214,270 @@ CEditorAssetEntryTexture	$DBA0A227
 	IndexedFileSize = 4042655;
 	Dirty = true;
 }
-CEditorAssetEntryTexture	$7A204876
+CEditorAssetEntryTexture	$F21A0E56
 {
 	Filename = "Alpha0.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2100079785);
-	IndexedFileSize = 1609;
+	InternalIndexedLastModifiedTime = uint2(414, 2101003539);
+	IndexedFileSize = 162591;
+	InternalLastDetailedAnalysisTime = uint2(414, 2101018610);
+	DimensionsData = uint4(593, 468, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryDir	$6F166E32
+{
+	Filename = "Textures";
+	InternalIndexedLastModifiedTime = uint2(414, 2101018608);
+	Assets = {
+		"$E6A38015",
+		"$4A2E39A6",
+	};
+}
+CEditorAssetEntryTexture	$E6A38015
+{
+	Filename = "Alpha0.png.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2101018608);
+	IndexedFileSize = 36345;
 	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2101018620);
+	DimensionsData = uint4(256, 256, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryTexture	$4A2E39A6
+{
+	Filename = "Alpha0.pkim";
+	InternalIndexedLastModifiedTime = uint2(414, 2101018583);
+	IndexedFileSize = 1110136;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2101018626);
+	DimensionsData = uint4(593, 468, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryDir	$0FF613D6
+{
+	Filename = "Cache";
+	Assets = {
+		"$D4A8BCF2",
+		"$A86B0D75",
+	};
+}
+CEditorAssetEntryDir	$D4A8BCF2
+{
+	Filename = "Textures";
+	InternalIndexedLastModifiedTime = uint2(414, 2101018625);
+	Assets = {
+		"$46499FBE",
+	};
+}
+CEditorAssetEntryTexture	$46499FBE
+{
+	Filename = "Alpha0.pkim.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2101018625);
+	IndexedFileSize = 36345;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2101018647);
+	DimensionsData = uint4(256, 256, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryEffect	$21E38D9D
+{
+	Filename = "sparks.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2115920708);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+		"Textures/Alpha0.png",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+	};
+	IndexedFileSize = 30414;
+	InternalLastDetailedAnalysisTime = uint2(414, 2115920880);
+	IndexedFileVersion = "2.20.13.26695";
+	LayersData = 3;
+	NodeGraphCountData = 1;
+	InstructionCountData = 147;
+	LanguagesData = "eng";
+	NodeStatsCountData = 2;
+}
+CEditorAssetEntryEffect	$AADD07E3
+{
+	Filename = "sparks_2.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2109525514);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Textures/Alpha0.png",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
+		"Library/PopcornFXCore/Materials/DefaultTextures/White.dds",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+	};
+	IndexedFileSize = 46664;
+	InternalLastDetailedAnalysisTime = uint2(414, 2109525685);
+	IndexedFileVersion = "2.20.13.26695";
+	IndexedTemplates = {
+		"$2E40BBFA",
+		"$CE88C498",
+		"$DCDA15D2",
+	};
+	LayersData = 4;
+	NodeGraphCountData = 5;
+	InstructionCountData = 438;
+	LanguagesData = "eng";
+	NodeStatsCountData = 3;
+}
+CEditorAssetEntryDir	$BFCB68BA
+{
+	Filename = "Content";
+}
+CEditorTemplateEntry	$2E40BBFA
+{
+	CustomName = "SparkPhysics";
+	EmitDeprecationWarning = true;
+	ObjectUID = 550393175;
+}
+CEditorTemplateEntry	$CE88C498
+{
+	CustomName = "Sparllife";
+	EmitDeprecationWarning = true;
+	ObjectUID = 1423306343;
+}
+CEditorTemplateEntry	$DCDA15D2
+{
+	CustomName = "SparkColor";
+	ClassType = Sampler;
+	EmitDeprecationWarning = true;
+	ObjectUID = 1831642001;
+}
+CEditorAssetEntryDir	$9616EE69
+{
+	Filename = "Thumbnails";
+	Assets = {
+		"$7B587A3D",
+	};
+}
+CEditorAssetEntryDir	$7B587A3D
+{
+	Filename = "Content";
+	InternalIndexedLastModifiedTime = uint2(414, 2107194047);
+	Assets = {
+		"$84BE598D",
+		"$52B1984A",
+		"$CB7B43A0",
+	};
+}
+CEditorAssetEntryTexture	$84BE598D
+{
+	Filename = "sparks_2.pkfx.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2107194047);
+	IndexedFileSize = 54261;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2107540870);
+	DimensionsData = uint4(256, 256, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGR8";
+}
+CEditorAssetEntryEffect	$6463D025
+{
+	Filename = "FX_Simple.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2056814808);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+		"Library/PopcornFXCore/Templates/Color.pkfx",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+		"Library/PopcornFXCore/Materials/DefaultTextures/Diffuse.dds",
+	};
+	IndexedFileSize = 33214;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2115943236);
+	IndexedFileVersion = "2.20.1.21981";
+	Description = {
+		"@eng:<b>Fountain effect</b>, indefinitely spawns a vertical rising stream of particles, falling back down under gravity.\\nInfinite effect.",
+	};
+	LayersData = 3;
+	NodeGraphCountData = 1;
+	InstructionCountData = 153;
+	LanguagesData = "eng";
+	NodeStatsCountData = 2;
+}
+CEditorAssetEntryEffect	$225DF45F
+{
+	Filename = "light.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2118734840);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Materials/DefaultTextures/White.dds",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+	};
+	IndexedFileSize = 13107;
+	InternalLastDetailedAnalysisTime = uint2(414, 2118735283);
+	IndexedFileVersion = "2.20.13.26695";
+	LayersData = 2;
+	NodeGraphCountData = 1;
+	InstructionCountData = 39;
+	NodeStatsCountData = 1;
+}
+CEditorAssetEntryTexture	$52B1984A
+{
+	Filename = "light.pkfx.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2056814828);
+	IndexedFileSize = 64534;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2115944329);
+	DimensionsData = uint4(256, 256, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryTexture	$CB7B43A0
+{
+	Filename = "light.pkfx.anim.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2056814826);
+	IndexedFileSize = 901119;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2115944362);
+	DimensionsData = uint4(128, 6144, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryDir	$A86B0D75
+{
+	Filename = "Editor";
+	Assets = {
+		"$150C9D62",
+	};
+}
+CEditorAssetEntryDir	$150C9D62
+{
+	Filename = "Thumbnails";
+	Assets = {
+		"$17E41385",
+	};
+}
+CEditorAssetEntryDir	$17E41385
+{
+	Filename = "Content";
+	InternalIndexedLastModifiedTime = uint2(414, 2115944361);
+	Assets = {
+		"$5E35690E",
+	};
+}
+CEditorAssetEntryTexture	$5E35690E
+{
+	Filename = "light.pkfx.anim.png.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2115944361);
+	IndexedFileSize = 3083;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, 2115944375);
+	DimensionsData = uint4(256, 256, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
 }

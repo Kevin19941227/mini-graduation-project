@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,6 +8,7 @@ using UnityEngine.UI;
 public sealed class ButtonFeedbackRuntime : MonoBehaviour
 {
     private const string RuntimeObjectName = "[ButtonFeedbackRuntime]";
+    private const string HeavyClickResourcePath = "SFX/heavy_button_press_thud";
     private const float ScanInterval = 0.5f;
     private const float ClickDuration = 0.045f;
     private const int SampleRate = 44100;
@@ -62,9 +62,9 @@ public sealed class ButtonFeedbackRuntime : MonoBehaviour
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
-        audioSource.volume = 0.75f;
+        audioSource.volume = 0.85f;
 
-        clickClip = CreateClickClip();
+        clickClip = LoadClickClip();
     }
 
     private void OnEnable()
@@ -108,7 +108,7 @@ public sealed class ButtonFeedbackRuntime : MonoBehaviour
             return;
         }
 
-        runtime.audioSource.pitch = Random.Range(0.96f, 1.04f);
+        runtime.audioSource.pitch = Random.Range(0.98f, 1.02f);
         runtime.audioSource.PlayOneShot(runtime.clickClip);
     }
 
@@ -162,6 +162,12 @@ public sealed class ButtonFeedbackRuntime : MonoBehaviour
     #endregion
 
     #region Audio
+
+    private static AudioClip LoadClickClip()
+    {
+        AudioClip clip = Resources.Load<AudioClip>(HeavyClickResourcePath);
+        return clip != null ? clip : CreateClickClip();
+    }
 
     private static AudioClip CreateClickClip()
     {

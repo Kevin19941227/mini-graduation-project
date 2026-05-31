@@ -897,6 +897,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Jump:
                 _jumpStartTime = Time.time;
                 _animator.CrossFadeInFixedTime("Jump", 0.1f);
+                if (_audioSource != null && _audioSource.clip == _runSound)
+                {
+                    _audioSource.loop = false;
+                    _audioSource.Stop();
+                }
                 PlaySound(_jumpSound, 0.19f);
                 break;
             case PlayerPose.Fall:

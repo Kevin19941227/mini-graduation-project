@@ -56,7 +56,7 @@ public class ZoneController : NetworkBehaviour
 
         MapGenerator mapGen = FindObjectOfType<MapGenerator>();
         if (mapGen != null)
-            _zoneCenter = mapGen.GetMapCenter();
+            _zoneCenter = mapGen.GetRandomTileCenter();
 
         StartCoroutine(ZoneRoutine());
     }

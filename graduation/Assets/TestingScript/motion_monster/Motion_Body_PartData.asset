@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87ed066da26318c40b2c972a62e2ceb1, type: 3}
+  m_Name: Motion_Body_PartData
+  m_EditorClassIdentifier: 
+  partID: 301
+  partName: Motion Body
+  partType: 1
+  rarity: 0
+  statModifiers: []
+  hpBonus: 0
+  attackBonus: 0
+  moveSpeedBonus: 0
+  defenseBonus: 0
+  attackSpeedBonus: 0
+  passiveBuffs: []
+  icon: {fileID: 21300000, guid: f2a9db11f92b82e4bb4d464751aea87e, type: 3}
+  partPrefab: {fileID: 3607562850829040265, guid: 898ce263dec8ddf4188cedbc750f6286,
+    type: 3}
+  maxStack: 99

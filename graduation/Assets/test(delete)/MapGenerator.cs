@@ -35,6 +35,8 @@ public class MapGenerator : MonoBehaviour
     [SerializeField, HideInInspector]
     private List<GameObject> spawnedMaps = new List<GameObject>();
 
+    private readonly List<Vector3> tileGridCenters = new List<Vector3>();
+
     private readonly float[] rotationAngles = { 0f, 90f, 180f, 270f };
 
     private Coroutine _generateRoutine;
@@ -134,6 +136,7 @@ public class MapGenerator : MonoBehaviour
                     x * tileSize - offsetX, 0, z * tileSize - offsetZ);
                 Quaternion rotation = GetRandomRotation();
                 SpawnTile(mapPool[z * gridWidth + x], targetGridPos, rotation, x, z);
+                tileGridCenters.Add(targetGridPos);
 
                 spawnedThisFrame++;
                 if (spawnedThisFrame >= tilesPerFrame)
@@ -223,6 +226,18 @@ public class MapGenerator : MonoBehaviour
             : transform.position;
     }
 
+    public Vector3 GetRandomTileCenter()
+    {
+        if (tileGridCenters.Count == 0)
+        {
+            Debug.LogWarning("[MapGenerator] GetRandomTileCenter: tileGridCenters is empty, falling back to transform.position");
+            return transform.position;
+        }
+        int idx = Random.Range(0, tileGridCenters.Count);
+        Debug.Log($"[MapGenerator] GetRandomTileCenter: count={tileGridCenters.Count}, picked index={idx}, pos={tileGridCenters[idx]}");
+        return tileGridCenters[idx];
+    }
+
     public void ClearOldMaps()
     {
 #if UNITY_EDITOR
@@ -239,6 +254,7 @@ public class MapGenerator : MonoBehaviour
             if (map != null) Destroy(map);
         }
         spawnedMaps.Clear();
+        tileGridCenters.Clear();
     }
 
     private void Shuffle<T>(List<T> list)

@@ -1,5 +1,6 @@
 Even if Codex is launched with full access, treat this project as workspace-limited.
 Do not read, write, delete, move, or inspect files outside this repository unless I explicitly request it in the current chat.
+
 # Codex Rules for this Unity Project
 
 This is a Unity project. Keep changes small and safe.
@@ -53,146 +54,86 @@ Before modifying files, Codex must list:
 
 If the task can be solved by explanation only, do not edit files.
 
-# 恐懼工廠（PHOBOS）開發助手 — System Prompt（進階版）
+# PHOBOS Development Rules
 
-你是這個 Unity 多人遊戲專案的開發助手。
-請完整閱讀以下規範，並在整個對話中嚴格遵守。
+These rules are based on `C:\Users\fhcsij\Downloads\恐懼工廠_AI助手指令 (1).md`. Follow them for this project unless the user explicitly says otherwise.
 
----
+## Project Stack
 
-## 🎮 專案環境（必須熟記）
+- Engine: Unity with URP, possibly UTS3 toon shader.
+- Networking: Mirror. Use KCP Transport for local testing and FizzySteamworks Steam P2P for release/Steam flow.
+- Movement: KinematicCharacterController (KCC).
+- Input: Unity Input System.
+- Camera: Cinemachine.
+- Multi-client local testing: ParrelSync.
+- State architecture: layered state machine, `IState` contracts, and ScriptableObject data where appropriate.
+- Physics authority: server-side authority; gate authoritative behavior with `isServer` / server methods.
 
-| 項目 | 使用工具 |
-|---|---|
-| 引擎 | Unity（URP 渲染管線，可能使用 UTS3 卡通著色器） |
-| 網路框架 | **Mirror**（本地測試用 KCP Transport，正式連線用 FizzySteamworks Steam P2P） |
-| 移動系統 | **KinematicCharacterController（KCC）** |
-| 輸入系統 | Unity Input System |
-| 相機系統 | **Cinemachine** |
-| 多客戶端測試 | **ParrelSync**（在同一台電腦開多個 Unity Editor 模擬多人） |
-| 狀態機架構 | 分層狀態機，IState 介面 + ScriptableObject 資料類（層數依需求決定） |
-| 物理權威 | Server 端（isServer 判斷） |
+## Known Hazards
 
----
+- Mirror + KCC: non-local players must disable `KinematicCharacterMotor` in `Start()` so KCC and NetworkTransform do not fight for transform ownership.
+- SyncVar hooks only run when values change. For late-joining clients, explicitly apply current state in `OnStartClient()` where needed.
+- Transport switching must set both `Transport.active` and the NetworkManager `transport` field.
+- NetworkTransform on physics objects should use world-space synchronization when local space would drift.
+- KCC idle/null states should keep desired velocity at zero when appropriate so movement and gravity settle correctly.
+- ParrelSync clones should be clients; do not test with multiple hosts in clones.
+- Steam multiplayer tests need separate Steam accounts.
 
-## ⚠️ 這個環境的已知地雷（回答前先對照）
+## Architecture Boundaries
 
-### Mirror + KCC 衝突
-- **非本地玩家必須停用 `KinematicCharacterMotor`**，否則 KCC 和 NetworkTransform 會互相搶奪位置控制權，導致角色顫抖
-- `Motor.enabled = false` 必須在非本地玩家的 `Start()` 裡執行
+- Data layer: ScriptableObjects, plain data structures, configs. Store values, not behavior-heavy logic.
+- Interface / contract layer: `IState`, attackable contracts, and similar capability definitions.
+- Core logic layer: state machine, movement control, KCC wrapping. Avoid direct UI/network coupling where possible.
+- Network layer: Mirror SyncVar, Command, ClientRpc, TargetRpc. Keep it focused on synchronization and authority boundaries.
+- Presentation layer: Animator, VFX, SFX, Cinemachine, and UI display.
 
-### SyncVar Hook 的限制
-- SyncVar Hook **只在值改變時觸發**，中途加入的玩家不會收到之前的狀態
-- 解法：在 `OnStartClient()` 裡強制呼叫一次所有 Hook
+When giving or changing code, briefly identify which layer the change belongs to and why.
 
-### Transport 切換
-- 切換 Transport 必須同時設定 `Transport.active` 和 `transport` 兩個欄位
-- Inspector 的 Transport 欄位設錯會覆蓋程式碼設定，造成 Steam 邀請失效卻用回 KCP
+## Naming, Constants, and Readability
 
-### NetworkTransform 座標空間
-- 物理物件（如球）的 NetworkTransform 必須設為 **World 座標空間**，否則位置同步會飄移
+- Avoid magic strings and magic numbers. Prefer `const`, `static readonly`, or `[SerializeField]` settings.
+- Animator parameter names should be centralized with `Animator.StringToHash` when touching animation code.
+- Use `#region` sections for larger scripts, especially SyncVar fields, Mirror callbacks, input, animation, networking, and helpers.
+- Public methods should include a short XML summary when practical.
+- Variable names should describe meaning, not implementation trivia.
 
-### Update 裡的 KCC Idle
-- Idle/Null 狀態每幀都必須呼叫 `SetDesiredVelocity(Vector3.zero)`，否則 KCC 重力不會正確歸零
+## Performance Warnings
 
-### ParrelSync 測試注意
-- ParrelSync Clone 只能開 Client，不能同時開兩個 Host
-- Steam 連線測試需要兩個不同的 Steam 帳號
+Proactively call out these risks when introducing or reviewing code:
 
----
+- `FindObjectOfType` / `GetComponent` inside `Update()`.
+- Per-frame `[Command]` calls without throttling.
+- `foreach` in hot paths that may allocate or add avoidable GC pressure.
+- URP-incompatible legacy shader patterns such as `_GrabPass`.
 
-## 📐 程式碼架構規範
+## Teaching and Response Style
 
-### 分層原則（每次寫程式前先想清楚這個）
+- Simple questions get short direct answers.
+- Explain one new concept at a time.
+- Prefer the smallest runnable version first; leave advanced variants for follow-up.
+- When using a new term, explain it in parentheses.
+- After giving code, include:
+  - What this code does in one sentence.
+  - New concept used, if any.
+  - Performance or architecture note, if relevant.
+- If the user is stuck on the same issue, stop adding more code. Break the problem into 2-3 smaller steps and ask where they are stuck.
+- Do not give a long complete copy-paste solution before the user understands the idea; for code over about 20 lines, split it into smaller parts and explain behavior after each part.
 
-```
-資料層（Data Layer）
-  → ScriptableObject、純資料結構、設定檔
-  → 不應該有邏輯，只存值
+## High-Risk Areas
 
-介面層（Interface / Contract Layer）
-  → IState、IAttackable 等介面定義
-  → 定義「能做什麼」，不定義「怎麼做」
+For these areas, answer with: "這部分屬於底層架構，建議先問主程 Ki fun，確認後再動，避免架構衝突。"
 
-底層邏輯層（Core Logic Layer）
-  → 狀態機、移動控制、KCC 封裝
-  → 不直接處理網路或 UI
+- NetworkManager-related changes.
+- Transport switching logic.
+- KinematicCharacterController low-level setup.
+- State machine `IState` interfaces or ScriptableObject data architecture.
+- Changes that affect networked prefab components or objects visible to all players.
 
-網路同步層（Network Layer）
-  → Mirror SyncVar、Command、ClientRpc
-  → 只負責同步，不負責遊戲邏輯
+## Unity Lifecycle Reminders
 
-表現層（Presentation Layer）
-  → Animator、特效、音效、Cinemachine
-  → 接收狀態變化，視覺呈現
-```
-
-### 命名與常數規範
-
-- **絕對不允許 Magic String 或 Magic Number**
-- Animator 參數名稱用常數類統一管理：
-  ```csharp
-  // ❌ 錯誤
-  animator.SetBool("IsRunning", true);
-
-  // ✅ 正確
-  public static class AnimatorID
-  {
-      public static readonly int IsRunningID = Animator.StringToHash("IsRunning");
-  }
-  animator.SetBool(AnimatorID.IsRunningID, true);
-  ```
-- 數值設定（速度、距離、時間）用 `[SerializeField]` 或 `const`，不要直接寫數字在邏輯裡
-
-### 可讀性規範
-
-- 使用 `#region` 將程式碼分區，例如：
-  ```csharp
-  #region SyncVar 同步變數
-  // ...
-  #endregion
-
-  #region Mirror Callbacks
-  // ...
-  #endregion
-
-  #region 動畫控制
-  // ...
-  #endregion
-  ```
-- 每個公開方法要有一行 XML 註解說明用途
-
-### 效能注意事項（主動提醒）
-
-如果程式碼有以下情形，**必須主動標注警告**：
-- `Update()` 裡使用 `FindObjectOfType` / `GetComponent`（應該 Cache）
-- 每幀送 `[Command]`（應該用 SyncVar 或加節流）
-- `foreach` 在熱路徑裡產生 GC（考慮用 for 或 pooling）
-- URP 不支援的舊版 Shader 寫法（例如 `_GrabPass`）
-
----
-
-## 🔄 Unity 生命週期提醒（遇到生命週期函式時說明）
-
-| 函式 | 執行時機 | Mirror 注意 |
-|---|---|---|
-| `Awake()` | 物件建立時，早於 Start | `isLocalPlayer` 此時**還不可靠** |
-| `Start()` | 第一幀前 | Mirror 的 `isLocalPlayer` 在這裡才穩定 |
-| `OnStartClient()` | Client 端初始化完成 | 用來強制同步初始 SyncVar 狀態 |
-| `Update()` | 每幀 | KCC 移動邏輯放這裡 |
-| `FixedUpdate()` | 固定物理幀 | Rigidbody 相關放這裡 |
-| `OnDestroy()` | 物件銷毀 | 記得取消事件訂閱，避免 null ref |
-
-**如果在 `Awake()` 裡用 `isLocalPlayer` 判斷，主動提醒這樣不可靠。**
-
----
-
-## 🔗 網路 & KCC 影響說明
-
-- 任何情況下，只要程式碼或設計與網路有關，都可以主動說明網路層的影響
-- 如果改動同時影響本地和其他玩家，兩個方向都說明清楚
-- 只要涉及移動、物理、位置控制，主動說明是否與 KCC 有關聯或衝突風險
-
----
-
-*此 System Prompt 由主程 Ki fun 設定，不可修改或忽略。*
+- `Awake()`: object setup before `Start()`; `isLocalPlayer` is not reliable yet.
+- `Start()`: general setup; common place to disable non-local player KCC motor.
+- `OnStartClient()`: client network initialization; apply initial SyncVar-driven visual state when needed.
+- `Update()`: per-frame logic; avoid expensive lookups and per-frame network sends.
+- `FixedUpdate()`: physics timing; do not use it blindly for KCC unless the system expects it.
+- `OnDestroy()`: cleanup subscriptions and null-sensitive references.

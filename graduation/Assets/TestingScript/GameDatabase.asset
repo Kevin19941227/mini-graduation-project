@@ -27,6 +27,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 97689b4ce32d67d499173e5b1af92fb9, type: 2}
   - {fileID: 11400000, guid: 3348c3071448a7a4f8bb3e0a0024f13c, type: 2}
   - {fileID: 11400000, guid: 3a76699ff11886b41af225cf4b633e54, type: 2}
+  - {fileID: 11400000, guid: 06ea54d79734e174dba2798770d17b46, type: 2}
+  - {fileID: 11400000, guid: 37595271f93235b4082732aa176db17d, type: 2}
+  - {fileID: 11400000, guid: 7e35cd360e9718542ac134b06c726263, type: 2}
+  - {fileID: 11400000, guid: 637158d6bc2933d48af44780cd18e37b, type: 2}
+  - {fileID: 11400000, guid: ea9ee8f72ff52e446b355994aca0b209, type: 2}
   monsters: []
   dropTables: []
   mapPieces: []

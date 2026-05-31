@@ -13,6 +13,8 @@ Codex may inspect and modify only these folders unless I explicitly say otherwis
 - Assets/BaseData/
 - Assets/DataScript/
 - Assets/test(delete)/
+- Assets/NewProject/
+- Assets/HHittest/
 
 ## Forbidden areas
 

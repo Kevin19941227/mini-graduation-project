@@ -99,6 +99,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public float hitInvincibilityDuration = 0.5f;
     public CinemachineImpulseSource impulseSource;
 
+    [Header("Hit Effect")]
+    [SerializeField] private GameObject hitEffectPrefab;
+    [SerializeField, Min(0f)] private float hitEffectLifetime = 2f;
+
     [Header("Control Mode")]
     [SerializeField] private PlayerControlModeController controlModeController;
     [SerializeField] private Key assemblyModeKey = Key.B;
@@ -951,6 +955,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             {
                 if (playerTarget == this || !TryRegisterAttackTarget(playerTarget)) continue;
                 playerTarget.TakeDamage(attackDamage, attackerForward);
+                RpcPlayHitEffect(GetHitEffectPosition(hit, playerTarget.transform));
                 continue;
             }
 
@@ -959,12 +964,38 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             if (!TryRegisterAttackTarget(monsterTarget)) continue;
 
             monsterTarget.TakeDamage(attackDamage, attackerForward, this);
+            RpcPlayHitEffect(GetHitEffectPosition(hit, monsterTarget.transform));
         }
     }
 
     private bool TryRegisterAttackTarget(Component target)
     {
         return target != null && _attackHitTargetIds.Add(target.GetInstanceID());
+    }
+
+    private Vector3 GetHitEffectPosition(Collider hitCollider, Transform targetTransform)
+    {
+        if (hitCollider != null)
+        {
+            Vector3 closestPoint = hitCollider.ClosestPoint(transform.position);
+            if ((closestPoint - transform.position).sqrMagnitude > Mathf.Epsilon)
+                return closestPoint;
+        }
+
+        if (targetTransform != null)
+            return targetTransform.position + Vector3.up;
+
+        return transform.position + transform.forward * attackRange;
+    }
+
+    [ClientRpc]
+    private void RpcPlayHitEffect(Vector3 position)
+    {
+        if (hitEffectPrefab == null) return;
+
+        GameObject effect = Instantiate(hitEffectPrefab, position, Quaternion.identity);
+        if (hitEffectLifetime > 0f)
+            Destroy(effect, hitEffectLifetime);
     }
 
     [Command]

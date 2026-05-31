@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09159473643531345883668017193e4d, type: 3}
+  m_Name: PKFxSettings
+  m_EditorClassIdentifier: 
+  m_GeneralCategory: 1
+  m_AssetCategory: 1
+  m_QualityCategory: 1
+  m_EnableRaycastForCollisions: 0
+  m_UpdateSimManually: 0
+  m_UseApplicationAudioLoopback: 0
+  m_AssetGUID:
+  - m_Path: Assets/Hittest_Baked/Content/sparks.pkfx.asset
+    m_New: 134cd08c3d9c7574c95f41ae63f2381d
+    m_Old: 134cd08c3d9c7574c95f41ae63f2381d
+  - m_Path: Assets/Hittest_Baked/Content/sparks_2.pkfx.asset
+    m_New: c6d7115ff3e84794fa35bc9ae5c0e9a9
+    m_Old: c6d7115ff3e84794fa35bc9ae5c0e9a9
+  m_RenderingCategory: 1
+  m_MaterialFactory: {fileID: 11400000, guid: 252239f8ab6663d47ab95385c1fcd79a, type: 2}
+  m_EnableSoftParticles: 0
+  m_DisableDynamicEffectBounds: 0
+  m_EnableThumbnails: 0
+  m_UseThumbnailsInBuilds: 0
+  m_EnableAnimatedThumbnails: 1
+  m_UseAnimatedThumbnailsInBuilds: 0
+  m_AutomaticMeshResizing: 1
+  m_VertexBufferSizeMultiplicator: 0.5
+  m_IndexBufferSizeMultiplicator: 0.5
+  m_MeshesDefaultSize:
+  - m_GeneratedName: "Billboard   Color Diffuse  PremultipliedAlpha UVs  Textures/\u2014Pngtree\u2014light
+      effect glow_6320136.png (none) (none) (none) (none) (none) (none) (none) (none)
+      1 0"
+    m_DefaultVertexBufferSize: 1440
+    m_DefaultIndexBufferSize: 1749
+    m_StaticWorldBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 50, y: 50, z: 50}
+  - m_GeneratedName: Billboard   Color Diffuse  PremultipliedAlpha UVs  Textures/Alpha0.png
+      (none) (none) (none) (none) (none) (none) (none) (none) 1 0
+    m_DefaultVertexBufferSize: 1380
+    m_DefaultIndexBufferSize: 2766
+    m_StaticWorldBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 50, y: 50, z: 50}
+  - m_GeneratedName: Billboard   Color Diffuse  PremultipliedAlpha UVs  Library/PopcornFXCore/Materials/DefaultTextures/White.dds
+      (none) (none) (none) (none) (none) (none) (none) (none) 1 0
+    m_DefaultVertexBufferSize: 1440
+    m_DefaultIndexBufferSize: 2775
+    m_StaticWorldBounds:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 50, y: 50, z: 50}
+  m_UseMeshInstancing: 0
+  m_FreeUnusedBatches: 0
+  m_FrameCountBeforeFreeingUnusedBatches: 240
+  m_ManualCameraLayer: 0
+  m_MaxCameraSupport: 1
+  m_EnableEditorCamera: 1
+  m_EnablePopcornFXLight: 0
+  m_MaxPopcornFXLights: 16
+  m_EnablePopcornFXSound: 0
+  m_MaxPopcornFXSounds: 16
+  m_EnablePopcornFXDecal: 0
+  m_MaxPopcornFXDecals: 16
+  m_ThreadingCategory: 1
+  m_SingleThreadedExecution: 0
+  m_OverrideThreadPoolConfig: 0
+  m_ThreadsAffinity: 
+  m_LODCategory: 1
+  m_LODAdvanceCategory: 0
+  m_OverrideLODSettings: 0
+  m_LODDefaultMinDistance: 5
+  m_LODDefaultMaxDistance: 200
+  m_LODDefaultMinMinDistance: 2
+  m_LODMinDistance: 5
+  m_LODMaxDistance: 200
+  m_LODMinMinDistance: 2
+  m_ProfilerCategory: 1
+  m_ProfilerSceneBudgetInSeconds: 0.002
+  m_ProfilerPerEffectBudgetInSeconds: 0.0005
+  m_ProfilerSceneParticleBudget: 10000
+  m_ProfilerPerEffectParticleBudget: 1000
+  m_CPPMarkersMaxDepth: 2
+  m_ProfilerColorBudgetExceeded: {r: 1, g: 0, b: 0, a: 1}
+  m_ProfilerColorBudgetNormal: {r: 0, g: 1, b: 0, a: 1}
+  m_ProfilerHideKey: 101
+  m_ProfilerPauseKey: 114
+  m_ProfilerSortKey: 116
+  m_UseGPUBillboarding: 0
+  m_EnableLocalizedPages: 0
+  m_EnableLocalizedByDefault: 0
+  m_FeatureSetCategory: 1
+  m_EnableDistortion: 0
+  m_EnableBlur: 0
+  m_BlurFactor: 0.2
+  m_DebugCategory: 1
+  m_EnablePopcornFXLogs: 1
+  m_EnableFileLogs: 0
+  m_DebugEffectsBoundingBoxes: 0
+  m_DebugEffectsRaycasts: 0
+  m_BakingCategory: 1
+  m_EnableEffectHotreload: 1
+  m_EnableHotreloadInPlayMode: 0
+  m_UseHashesAsMaterialName: 1
+  m_EnableForceDeterminism: 0
+  m_PopcornPackFxPath: Assets/Hittest
+  m_UnityPackFxPath: /Hittest_Baked
+  m_EnableAssetPlatformVersion: 0
+  m_CurrentPlatform: -2
+  m_QualityVersionNames:
+  - Performant
+  - Balanced
+  - HighFidelity
+  m_CurrentQualityVersionName: HighFidelity

@@ -1,13 +1,13 @@
 {
   "dependencies": {
     "com.persistant-studios.popcornfx": {
-      "version": "file:C:/Users/deviloia/Downloads/Unity_PopcornFXPlugin_v2.20.13_Win_Linux_MacOS/com.persistant-studios.popcornfx",
+      "version": "file:C:/Users/kevin/un/package/PopcornFX/Unity_PopcornFXPlugin_v2.20.13_Win_Linux_MacOS/com.persistant-studios.popcornfx",
       "depth": 0,
       "source": "local",
       "dependencies": {}
     },
     "com.persistant-studios.popcornfx.urp": {
-      "version": "file:D:/com.persistant-studios.popcornfx.urp",
+      "version": "file:C:/Users/kevin/un/package/PopcornFX/UnityURP_PopcornFXPlugin_v2.20.13/com.persistant-studios.popcornfx.urp",
       "depth": 0,
       "source": "local",
       "dependencies": {

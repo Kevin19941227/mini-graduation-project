@@ -1,7 +1,7 @@
 {
   "dependencies": {
-    "com.persistant-studios.popcornfx": "file:C:/Users/deviloia/Downloads/Unity_PopcornFXPlugin_v2.20.13_Win_Linux_MacOS/com.persistant-studios.popcornfx",
-    "com.persistant-studios.popcornfx.urp": "file:D:/com.persistant-studios.popcornfx.urp",
+    "com.persistant-studios.popcornfx": "file:C:/Users/kevin/un/package/PopcornFX/Unity_PopcornFXPlugin_v2.20.13_Win_Linux_MacOS/com.persistant-studios.popcornfx",
+    "com.persistant-studios.popcornfx.urp": "file:C:/Users/kevin/un/package/PopcornFX/UnityURP_PopcornFXPlugin_v2.20.13/com.persistant-studios.popcornfx.urp",
     "com.unity.ai.navigation": "1.1.7",
     "com.unity.cinemachine": "2.10.7",
     "com.unity.collab-proxy": "2.12.4",

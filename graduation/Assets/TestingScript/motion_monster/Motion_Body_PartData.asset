@@ -17,13 +17,13 @@ MonoBehaviour:
   partType: 1
   rarity: 0
   statModifiers: []
-  hpBonus: 0
+  hpBonus: 8
   attackBonus: 0
   moveSpeedBonus: 0
-  defenseBonus: 0
+  defenseBonus: 1
   attackSpeedBonus: 0
   passiveBuffs: []
   icon: {fileID: 21300000, guid: f2a9db11f92b82e4bb4d464751aea87e, type: 3}
-  partPrefab: {fileID: 3607562850829040265, guid: 898ce263dec8ddf4188cedbc750f6286,
+  partPrefab: {fileID: 4169569585701848761, guid: 898ce263dec8ddf4188cedbc750f6286,
     type: 3}
   maxStack: 99

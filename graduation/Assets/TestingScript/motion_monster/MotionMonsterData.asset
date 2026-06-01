@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   monsterID: 300
   monsterName: Motion
-  maxHP: 100
-  attack: 25
-  moveSpeed: 6
-  defense: 10
-  attackRange: 2
-  attackInterval: 1.2
+  maxHP: 80
+  attack: 14
+  moveSpeed: 5.8
+  defense: 2
+  attackRange: 1.8
+  attackInterval: 1
   aiType: 0
   dropTableID: 300
   monsterPrefab: {fileID: 3607562850829040265, guid: 898ce263dec8ddf4188cedbc750f6286,

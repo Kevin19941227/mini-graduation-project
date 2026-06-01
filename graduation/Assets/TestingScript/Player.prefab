@@ -339,7 +339,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  addDebugPartsOnServer: 1
+  addDebugPartsOnServer: 0
   firstTestPartID: 1
   secondTestPartID: 2
 --- !u!114 &2092770837421761914
@@ -370,6 +370,9 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  enableCheatUI: 1
+  cheatGameDatabase: {fileID: 11400000, guid: f0beb0221959dcb4d8924938c34e9826, type: 2}
+  defaultCheatPartCount: 1
 --- !u!114 &3126795942607291231
 MonoBehaviour:
   m_ObjectHideFlags: 0

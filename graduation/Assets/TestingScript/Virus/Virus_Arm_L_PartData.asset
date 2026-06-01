@@ -17,8 +17,8 @@ MonoBehaviour:
   partType: 2
   rarity: 0
   statModifiers: []
-  hpBonus: 10
-  attackBonus: 10
+  hpBonus: 0
+  attackBonus: 3
   moveSpeedBonus: 0
   defenseBonus: 0
   attackSpeedBonus: 0

@@ -1007,7 +1007,7 @@ MonoBehaviour:
   maxHealth: 50
   monsterData: {fileID: 0}
   gameDatabase: {fileID: 0}
-  dropTableOverride: {fileID: 11400000, guid: 41979aaa2dc63b24da52e6bede7a3052, type: 2}
+  dropTableOverride: {fileID: 11400000, guid: c44a5e04a04232e478937030381197e2, type: 2}
   attackDistance: 3.05
   findPlayerInterval: 1
   speedSyncInterval: 0.1

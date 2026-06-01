@@ -21,9 +21,9 @@ MonoBehaviour:
   attackBonus: 0
   moveSpeedBonus: 0
   defenseBonus: 0
-  attackSpeedBonus: 0
+  attackSpeedBonus: 0.1
   passiveBuffs: []
   icon: {fileID: 21300000, guid: 58171777bf3fe6643aebf278fddc8bbc, type: 3}
-  partPrefab: {fileID: 3719635609043187220, guid: c6c1e20bba572854c875f333ef4eb9cb,
+  partPrefab: {fileID: 3791980357351878833, guid: c6c1e20bba572854c875f333ef4eb9cb,
     type: 3}
   maxStack: 99

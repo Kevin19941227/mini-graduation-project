@@ -17,7 +17,7 @@ MonoBehaviour:
   partType: 0
   rarity: 0
   hpBonus: 0
-  attackBonus: 10
+  attackBonus: 2
   moveSpeedBonus: 0
   defenseBonus: 0
   attackSpeedBonus: 0

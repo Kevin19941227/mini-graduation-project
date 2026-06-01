@@ -74,6 +74,21 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     [SyncVar(hook = nameof(OnAssemblyModeChanged))]
     private bool isAssemblyMode;
 
+    [SyncVar]
+    private int cheatMaxHealth = -1;
+
+    [SyncVar]
+    private int cheatAttackDamage = -1;
+
+    [SyncVar]
+    private int cheatDefense = -1;
+
+    [SyncVar]
+    private float cheatMoveSpeed = -1f;
+
+    [SyncVar]
+    private float cheatAttackSpeed = -1f;
+
     #endregion
 
     #region Runtime Data
@@ -106,6 +121,11 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     public int CurrentHealth => currentHealth;
     public bool IsDead => isDead;
     public bool IsAssemblyMode => isAssemblyMode;
+    public int CurrentMaxHealth => GetMaxHealth();
+    public int CurrentAttackDamage => GetAttackDamage();
+    public int CurrentDefense => GetDefense();
+    public float CurrentMoveSpeed => GetMoveSpeed();
+    public float CurrentAttackSpeed => GetAttackSpeed();
 
     #endregion
 
@@ -242,6 +262,54 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
             isRolling = false;
             rollDirection = Vector3.zero;
         }
+    }
+
+    /// <summary>
+    /// Applies debug stat overrides on the authoritative server.
+    /// </summary>
+    [Server]
+    public void ServerSetCheatStats(int maxHealth, int attackDamage, int defense, float moveSpeed, float attackSpeed)
+    {
+        int oldMaxHealth = GetMaxHealth();
+
+        cheatMaxHealth = Mathf.Max(1, maxHealth);
+        cheatAttackDamage = Mathf.Max(1, attackDamage);
+        cheatDefense = Mathf.Max(0, defense);
+        cheatMoveSpeed = Mathf.Max(0f, moveSpeed);
+        cheatAttackSpeed = Mathf.Max(0.1f, attackSpeed);
+
+        int newMaxHealth = GetMaxHealth();
+        currentHealth = Mathf.Clamp(currentHealth + newMaxHealth - oldMaxHealth, 1, newMaxHealth);
+        isDead = false;
+    }
+
+    /// <summary>
+    /// Restores this player's current HP to its current max HP on the server.
+    /// </summary>
+    [Server]
+    public void ServerHealToFull()
+    {
+        currentHealth = GetMaxHealth();
+        isDead = false;
+    }
+
+    /// <summary>
+    /// Clears debug stat overrides and returns to base data values on the server.
+    /// </summary>
+    [Server]
+    public void ServerClearCheatStats()
+    {
+        int oldMaxHealth = GetMaxHealth();
+
+        cheatMaxHealth = -1;
+        cheatAttackDamage = -1;
+        cheatDefense = -1;
+        cheatMoveSpeed = -1f;
+        cheatAttackSpeed = -1f;
+
+        int newMaxHealth = GetMaxHealth();
+        currentHealth = Mathf.Clamp(currentHealth + newMaxHealth - oldMaxHealth, 1, newMaxHealth);
+        isDead = false;
     }
 
     #endregion
@@ -642,28 +710,57 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
 
     private int GetMaxHealth()
     {
+        if (cheatMaxHealth > 0)
+        {
+            return cheatMaxHealth;
+        }
+
         return baseData != null ? Mathf.Max(1, baseData.baseHP) : 100;
     }
 
     private int GetAttackDamage()
     {
+        if (cheatAttackDamage > 0)
+        {
+            return cheatAttackDamage;
+        }
+
         return baseData != null ? Mathf.Max(1, baseData.baseAttack) : fallbackAttackDamage;
     }
 
     private int GetDefense()
     {
+        if (cheatDefense >= 0)
+        {
+            return cheatDefense;
+        }
+
         return baseData != null ? Mathf.Max(0, baseData.baseDefense) : 0;
     }
 
     private float GetMoveSpeed()
     {
+        if (cheatMoveSpeed >= 0f)
+        {
+            return cheatMoveSpeed;
+        }
+
         return baseData != null ? Mathf.Max(0f, baseData.baseMoveSpeed) : fallbackMoveSpeed;
     }
 
     private float GetAttackCooldown()
     {
-        float attackSpeed = baseData != null ? Mathf.Max(0.1f, baseData.baseAttackSpeed) : 1f;
-        return attackCooldown / attackSpeed;
+        return attackCooldown / GetAttackSpeed();
+    }
+
+    private float GetAttackSpeed()
+    {
+        if (cheatAttackSpeed >= 0.1f)
+        {
+            return cheatAttackSpeed;
+        }
+
+        return baseData != null ? Mathf.Max(0.1f, baseData.baseAttackSpeed) : 1f;
     }
 
     #endregion

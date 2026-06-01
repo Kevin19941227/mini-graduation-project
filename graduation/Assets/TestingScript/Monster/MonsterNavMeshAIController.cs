@@ -5,19 +5,27 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class MonsterNavMeshAIController : NetworkBehaviour
 {
-    #region Inspector 設定
+    #region Inspector
 
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private float detectRange = 20f;
     [SerializeField] private float attackRange = 2f;
     [SerializeField] private float targetRefreshInterval = 0.3f;
+    [SerializeField] private bool requireReachableTarget = true;
+    [SerializeField] private float unreachableRespawnDelay = 12f;
+    [SerializeField] private float offNavMeshRespawnDelay = 3f;
+    [SerializeField] private float respawnSampleRadius = 5f;
 
     #endregion
 
     #region Runtime
 
     private Transform currentTarget;
+    private Vector3 spawnPosition;
+    private Quaternion spawnRotation;
     private float targetRefreshTimer;
+    private float unreachableTimer;
+    private float offNavMeshTimer;
 
     #endregion
 
@@ -29,6 +37,12 @@ public class MonsterNavMeshAIController : NetworkBehaviour
         {
             agent = GetComponent<NavMeshAgent>();
         }
+    }
+
+    private void Start()
+    {
+        spawnPosition = transform.position;
+        spawnRotation = transform.rotation;
     }
 
     public override void OnStartClient()
@@ -48,6 +62,11 @@ public class MonsterNavMeshAIController : NetworkBehaviour
             return;
         }
 
+        if (!ValidateNavMeshState())
+        {
+            return;
+        }
+
         targetRefreshTimer -= Time.deltaTime;
 
         if (targetRefreshTimer <= 0f)
@@ -61,7 +80,7 @@ public class MonsterNavMeshAIController : NetworkBehaviour
 
     #endregion
 
-    #region AI 控制
+    #region AI Logic
 
     private void UpdateTarget()
     {
@@ -72,16 +91,25 @@ public class MonsterNavMeshAIController : NetworkBehaviour
 
         for (int i = 0; i < players.Length; i++)
         {
-            float sqrDistance = (players[i].transform.position - transform.position).sqrMagnitude;
+            Transform playerTransform = players[i].transform;
+            float sqrDistance = (playerTransform.position - transform.position).sqrMagnitude;
 
-            if (sqrDistance <= nearestSqrDistance)
+            if (sqrDistance > nearestSqrDistance)
             {
-                nearestSqrDistance = sqrDistance;
-                nearestPlayer = players[i].transform;
+                continue;
             }
+
+            if (requireReachableTarget && !CanReachTarget(playerTransform.position))
+            {
+                continue;
+            }
+
+            nearestSqrDistance = sqrDistance;
+            nearestPlayer = playerTransform;
         }
 
         currentTarget = nearestPlayer;
+        UpdateUnreachableTimer();
     }
 
     private void UpdateMovement()
@@ -102,12 +130,87 @@ public class MonsterNavMeshAIController : NetworkBehaviour
         if (sqrDistance <= attackRange * attackRange)
         {
             agent.isStopped = true;
-            // 之後這裡接 Attack State / 動畫
             return;
         }
 
         agent.isStopped = false;
         agent.SetDestination(currentTarget.position);
+    }
+
+    private bool CanReachTarget(Vector3 targetPosition)
+    {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+        {
+            return false;
+        }
+
+        NavMeshPath path = new NavMeshPath();
+
+        if (!agent.CalculatePath(targetPosition, path))
+        {
+            return false;
+        }
+
+        return path.status == NavMeshPathStatus.PathComplete;
+    }
+
+    private bool ValidateNavMeshState()
+    {
+        if (agent == null || !agent.enabled)
+        {
+            return false;
+        }
+
+        if (agent.isOnNavMesh)
+        {
+            offNavMeshTimer = 0f;
+            return true;
+        }
+
+        offNavMeshTimer += Time.deltaTime;
+
+        if (offNavMeshTimer >= offNavMeshRespawnDelay)
+        {
+            RespawnAtSpawnPoint();
+        }
+
+        return false;
+    }
+
+    private void UpdateUnreachableTimer()
+    {
+        if (currentTarget != null)
+        {
+            unreachableTimer = 0f;
+            return;
+        }
+
+        unreachableTimer += targetRefreshInterval;
+
+        if (unreachableTimer >= unreachableRespawnDelay)
+        {
+            RespawnAtSpawnPoint();
+        }
+    }
+
+    private void RespawnAtSpawnPoint()
+    {
+        if (NavMesh.SamplePosition(spawnPosition, out NavMeshHit hit, respawnSampleRadius, NavMesh.AllAreas))
+        {
+            agent.Warp(hit.position);
+        }
+        else
+        {
+            transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+        }
+
+        transform.rotation = spawnRotation;
+        currentTarget = null;
+        targetRefreshTimer = 0f;
+        unreachableTimer = 0f;
+        offNavMeshTimer = 0f;
+        agent.isStopped = true;
+        agent.ResetPath();
     }
 
     #endregion

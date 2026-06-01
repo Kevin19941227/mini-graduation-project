@@ -181,6 +181,12 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private const float MAX_STOP_ANIM_DURATION = 1.2f;
 
     public bool IsDead => _hp <= 0 || _currentPose == PlayerPose.Die;
+    public int CurrentHp => _hp;
+    public int CurrentMaxHp => maxHp;
+    public int CurrentAttackDamage => attackDamage;
+    public int CurrentDefense => _currentDefense;
+    public float CurrentMoveSpeed => walkSpeed;
+    public float CurrentAttackSpeed => 1f;
 
     void Awake()
     {
@@ -327,6 +333,52 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (isServer)
             ApplyServerHpAfterMaxHpChanged(previousMaxHp);
 
+        _worldHealthBar?.UpdateHP(_hp, maxHp);
+        UpdateLocalHudHealth(_hp);
+    }
+
+    [Server]
+    public void ServerSetCheatStats(int cheatMaxHp, int cheatAttackDamage, int cheatDefense, float cheatMoveSpeed, float cheatAttackSpeed)
+    {
+        int previousMaxHp = maxHp;
+        maxHp = Mathf.Max(1, cheatMaxHp);
+        attackDamage = Mathf.Max(1, cheatAttackDamage);
+        _currentDefense = Mathf.Max(0, cheatDefense);
+        walkSpeed = Mathf.Max(0f, cheatMoveSpeed);
+        runSpeed = walkSpeed * _runSpeedMultiplier;
+
+        ApplyServerHpAfterMaxHpChanged(previousMaxHp);
+        _worldHealthBar?.UpdateHP(_hp, maxHp);
+        UpdateLocalHudHealth(_hp);
+    }
+
+    [Server]
+    public void ServerHealToFull()
+    {
+        _hp = maxHp;
+        _currentPose = PlayerPose.Grounded;
+        _moveState = MoveState.Idle;
+        _hasReportedDeathToMatch = false;
+        _worldHealthBar?.UpdateHP(_hp, maxHp);
+        UpdateLocalHudHealth(_hp);
+    }
+
+    [Server]
+    public void ServerClearCheatStats()
+    {
+        if (equipmentStatsController != null)
+        {
+            equipmentStatsController.RecalculateStats();
+            return;
+        }
+
+        int previousMaxHp = maxHp;
+        maxHp = 100;
+        attackDamage = 10;
+        walkSpeed = 4f;
+        runSpeed = walkSpeed * _runSpeedMultiplier;
+        _currentDefense = 0;
+        ApplyServerHpAfterMaxHpChanged(previousMaxHp);
         _worldHealthBar?.UpdateHP(_hp, maxHp);
         UpdateLocalHudHealth(_hp);
     }
@@ -910,6 +962,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             case PlayerPose.Attack:
                 _animator.CrossFadeInFixedTime("Attack", 0.05f);
                 _canChangeState = false;
+                PlayEquippedPartAttackPresentation();
                 PlaySound(_attackSound, 0.25f);
                 break;
             case PlayerPose.Hit:
@@ -936,6 +989,23 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _attackFired = false;
         _canChangeState = true;
         ChangeState(PlayerPose.Grounded);
+    }
+
+    private void PlayEquippedPartAttackPresentation()
+    {
+        EquippedPartPresentation[] equippedPartPresentations = GetComponentsInChildren<EquippedPartPresentation>(true);
+
+        for (int i = 0; i < equippedPartPresentations.Length; i++)
+        {
+            EquippedPartPresentation equippedPartPresentation = equippedPartPresentations[i];
+
+            if (equippedPartPresentation == null)
+            {
+                continue;
+            }
+
+            equippedPartPresentation.PlayAttack();
+        }
     }
 
     private string GetDashAnimName()

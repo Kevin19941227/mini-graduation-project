@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   monsterID: 207
   monsterName: Time
-  maxHP: 100
-  attack: 29
-  moveSpeed: 50
-  defense: 19
-  attackRange: 3
-  attackInterval: 1.42
+  maxHP: 120
+  attack: 18
+  moveSpeed: 3.8
+  defense: 3
+  attackRange: 2.6
+  attackInterval: 1.6
   aiType: 0
-  dropTableID: 100
+  dropTableID: 200
   monsterPrefab: {fileID: 0}

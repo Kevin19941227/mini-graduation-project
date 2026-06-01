@@ -6,10 +6,10 @@ public class InventoryDebugSeeder : NetworkBehaviour
     #region Settings
 
     [Header("Debug")]
-    [SerializeField] private bool addDebugPartsOnServer = true;
-    [SerializeField] private bool addAllDatabaseParts = true;
+    [SerializeField] private bool addDebugPartsOnServer = false;
+    [SerializeField] private bool addAllDatabaseParts = false;
     [SerializeField] private GameDatabase gameDatabase;
-    [SerializeField] private int debugPartCount = 3;
+    [SerializeField] private int debugPartCount = 1;
     [SerializeField] private int firstTestPartID = 1;
     [SerializeField] private int secondTestPartID = 2;
 

@@ -19,9 +19,9 @@ MonoBehaviour:
   statModifiers: []
   hpBonus: 0
   attackBonus: 0
-  moveSpeedBonus: 0
+  moveSpeedBonus: 0.25
   defenseBonus: 0
-  attackSpeedBonus: 0
+  attackSpeedBonus: 0.05
   passiveBuffs:
   - {fileID: 11400008, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
   icon: {fileID: 21300000, guid: d9f1887c2d711904cb9fe3bfc2c02562, type: 3}

@@ -17,10 +17,10 @@ MonoBehaviour:
   partType: 1
   rarity: 0
   statModifiers: []
-  hpBonus: 0
+  hpBonus: 15
   attackBonus: 0
   moveSpeedBonus: 0
-  defenseBonus: 0
+  defenseBonus: 1
   attackSpeedBonus: 0
   passiveBuffs:
   - {fileID: 11400003, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}

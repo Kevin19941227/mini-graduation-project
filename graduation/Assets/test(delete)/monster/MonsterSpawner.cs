@@ -14,30 +14,31 @@ public class MonsterSpawner : NetworkBehaviour
     [SerializeField] private List<GameObject> monsterPrefabs = new List<GameObject>();
     [SerializeField, Min(1)] private int spawnCountPerPrefab = 1;
 
+    [Header("Respawn")]
+    [SerializeField] private bool maintainMonsterCount = true;
+    [SerializeField, Min(0.5f)] private float respawnCheckInterval = 5f;
+    [SerializeField, Min(1)] private int maxRespawnsPerCheck = 3;
+
     [Header("NavMesh Spawn Settings")]
     [SerializeField, Min(1)] private int spawnAttemptsPerMonster = 24;
     [SerializeField, Min(0.1f)] private float navMeshSampleDistance = 4f;
     [SerializeField, Min(1)] private int monstersPerFrame = 1;
 
     [Header("Spawn Validation")]
-    [Tooltip("是否限制生成高度，用來避免怪物出現在屋頂（需先確認地面實際 Y 高度再開啟）")]
     [SerializeField] private bool useHeightConstraint = false;
-    [Tooltip("允許生成的最大 Y 高度（地面通常在 0 附近，依實際場景調整）")]
     [SerializeField] private float maxSpawnHeight = 2f;
-    [Tooltip("建築物所在的 Layer，用射線偵測是否在建築物內部或屋頂（設為 Nothing 則停用）")]
     [SerializeField] private LayerMask obstacleLayerMask = 0;
-    [Tooltip("往上射線的最大距離，用來偵測天花板（建築物內部）")]
     [SerializeField, Min(1f)] private float ceilingCheckDistance = 50f;
-    [Tooltip("往下射線的距離，用來偵測腳下是否為建築物屋頂")]
     [SerializeField, Min(0.1f)] private float rooftopCheckDistance = 1.5f;
 
     #endregion
 
     #region Runtime State
 
-    private readonly List<GameObject> _spawnedMonsters = new List<GameObject>();
-    private bool _hasSpawned;
-    private bool _spawnRequested;
+    private readonly List<GameObject> spawnedMonsters = new List<GameObject>();
+    private bool hasSpawned;
+    private bool spawnRequested;
+    private float respawnCheckTimer;
 
     #endregion
 
@@ -51,6 +52,24 @@ public class MonsterSpawner : NetworkBehaviour
     private void OnDisable()
     {
         MapGenerator.OnNavMeshReady -= OnNavMeshReady;
+    }
+
+    private void Update()
+    {
+        if (!isServer || !maintainMonsterCount || !hasSpawned)
+        {
+            return;
+        }
+
+        respawnCheckTimer -= Time.deltaTime;
+
+        if (respawnCheckTimer > 0f)
+        {
+            return;
+        }
+
+        respawnCheckTimer = respawnCheckInterval;
+        RefillMissingMonsters();
     }
 
     #endregion
@@ -77,7 +96,10 @@ public class MonsterSpawner : NetworkBehaviour
 
     private void RegisterClientSpawnPrefabs()
     {
-        if (monsterPrefabs == null) return;
+        if (monsterPrefabs == null)
+        {
+            return;
+        }
 
         for (int i = 0; i < monsterPrefabs.Count; i++)
         {
@@ -101,16 +123,22 @@ public class MonsterSpawner : NetworkBehaviour
 
     private void OnNavMeshReady()
     {
-        if (!NetworkServer.active) return;
+        if (!NetworkServer.active)
+        {
+            return;
+        }
 
         RequestSpawn();
     }
 
     private void RequestSpawn()
     {
-        if (_spawnRequested || _hasSpawned) return;
+        if (spawnRequested || hasSpawned)
+        {
+            return;
+        }
 
-        _spawnRequested = true;
+        spawnRequested = true;
         StartCoroutine(SpawnWhenReady());
     }
 
@@ -131,17 +159,20 @@ public class MonsterSpawner : NetworkBehaviour
         if (!HasReadableNavMesh())
         {
             Debug.LogWarning("[MonsterSpawner] Map is ready, but no readable NavMesh data was found.");
-            _spawnRequested = false;
+            spawnRequested = false;
             yield break;
         }
 
         yield return SpawnAllOverFrames();
-        _spawnRequested = false;
+        spawnRequested = false;
     }
 
     private System.Collections.IEnumerator SpawnAllOverFrames()
     {
-        if (_hasSpawned) yield break;
+        if (hasSpawned)
+        {
+            yield break;
+        }
 
         if (monsterPrefabs == null || monsterPrefabs.Count == 0)
         {
@@ -149,7 +180,7 @@ public class MonsterSpawner : NetworkBehaviour
             yield break;
         }
 
-        _hasSpawned = true;
+        hasSpawned = true;
         int spawnedThisFrame = 0;
 
         for (int prefabIndex = 0; prefabIndex < monsterPrefabs.Count; prefabIndex++)
@@ -171,6 +202,33 @@ public class MonsterSpawner : NetworkBehaviour
         }
     }
 
+    private void RefillMissingMonsters()
+    {
+        RemoveMissingMonsterReferences();
+
+        int targetCount = GetTargetMonsterCount();
+        int missingCount = targetCount - spawnedMonsters.Count;
+
+        if (missingCount <= 0)
+        {
+            return;
+        }
+
+        int respawnCount = Mathf.Min(missingCount, maxRespawnsPerCheck);
+
+        for (int i = 0; i < respawnCount; i++)
+        {
+            GameObject prefab = GetRandomMonsterPrefab();
+
+            if (prefab == null)
+            {
+                return;
+            }
+
+            SpawnOne(prefab);
+        }
+    }
+
     private void SpawnOne(GameObject prefab)
     {
         if (!TryGetRandomNavMeshPosition(out Vector3 spawnPosition))
@@ -183,7 +241,7 @@ public class MonsterSpawner : NetworkBehaviour
         GameObject monster = Instantiate(prefab, spawnPosition, spawnRotation);
 
         NetworkServer.Spawn(monster);
-        _spawnedMonsters.Add(monster);
+        spawnedMonsters.Add(monster);
 
         Debug.Log($"[MonsterSpawner] Spawned {prefab.name} at {spawnPosition}.");
     }
@@ -214,14 +272,18 @@ public class MonsterSpawner : NetworkBehaviour
                 vertices[indices[triangleStartIndex + 1]],
                 vertices[indices[triangleStartIndex + 2]]);
 
-            if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, navMeshSampleDistance, NavMesh.AllAreas))
+            if (!NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, navMeshSampleDistance, NavMesh.AllAreas))
             {
-                if (IsValidSpawnPosition(hit.position))
-                {
-                    position = hit.position;
-                    return true;
-                }
+                continue;
             }
+
+            if (!IsValidSpawnPosition(hit.position))
+            {
+                continue;
+            }
+
+            position = hit.position;
+            return true;
         }
 
         position = Vector3.zero;
@@ -232,25 +294,25 @@ public class MonsterSpawner : NetworkBehaviour
     {
         if (useHeightConstraint && position.y > maxSpawnHeight)
         {
-            Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：高度 {position.y:F1} > maxSpawnHeight {maxSpawnHeight}");
+            Debug.Log($"[MonsterSpawner] Rejected spawn {position}: height {position.y:F1} > maxSpawnHeight {maxSpawnHeight}.");
             return false;
         }
 
-        if (obstacleLayerMask != 0)
+        if (obstacleLayerMask == 0)
         {
-            // 往上射線：打到天花板 → 在建築物內部
-            if (Physics.Raycast(position + Vector3.up * 0.05f, Vector3.up, ceilingCheckDistance, obstacleLayerMask))
-            {
-                Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：上方有建築物天花板（在內部）");
-                return false;
-            }
+            return true;
+        }
 
-            // 往下射線：腳下就是建築物表面 → 站在屋頂
-            if (Physics.Raycast(position + Vector3.up * 0.5f, Vector3.down, rooftopCheckDistance, obstacleLayerMask))
-            {
-                Debug.Log($"[MonsterSpawner] 拒絕位置 {position}：腳下是建築物屋頂");
-                return false;
-            }
+        if (Physics.Raycast(position + Vector3.up * 0.05f, Vector3.up, ceilingCheckDistance, obstacleLayerMask))
+        {
+            Debug.Log($"[MonsterSpawner] Rejected spawn {position}: blocked by ceiling.");
+            return false;
+        }
+
+        if (Physics.Raycast(position + Vector3.up * 0.5f, Vector3.down, rooftopCheckDistance, obstacleLayerMask))
+        {
+            Debug.Log($"[MonsterSpawner] Rejected spawn {position}: standing on blocked surface.");
+            return false;
         }
 
         return true;
@@ -281,6 +343,61 @@ public class MonsterSpawner : NetworkBehaviour
 
     #endregion
 
+    #region Helpers
+
+    private int GetTargetMonsterCount()
+    {
+        if (monsterPrefabs == null)
+        {
+            return 0;
+        }
+
+        int validPrefabCount = 0;
+
+        for (int i = 0; i < monsterPrefabs.Count; i++)
+        {
+            if (monsterPrefabs[i] != null)
+            {
+                validPrefabCount++;
+            }
+        }
+
+        return validPrefabCount * spawnCountPerPrefab;
+    }
+
+    private GameObject GetRandomMonsterPrefab()
+    {
+        if (monsterPrefabs == null || monsterPrefabs.Count == 0)
+        {
+            return null;
+        }
+
+        for (int attempt = 0; attempt < monsterPrefabs.Count; attempt++)
+        {
+            GameObject prefab = monsterPrefabs[Random.Range(0, monsterPrefabs.Count)];
+
+            if (prefab != null)
+            {
+                return prefab;
+            }
+        }
+
+        return null;
+    }
+
+    private void RemoveMissingMonsterReferences()
+    {
+        for (int i = spawnedMonsters.Count - 1; i >= 0; i--)
+        {
+            if (spawnedMonsters[i] == null)
+            {
+                spawnedMonsters.RemoveAt(i);
+            }
+        }
+    }
+
+    #endregion
+
     #region Public API
 
     /// <summary>Destroys all monsters spawned by this server spawner and allows spawning again.</summary>
@@ -288,18 +405,18 @@ public class MonsterSpawner : NetworkBehaviour
     {
         if (!isServer) return;
 
-        for (int i = _spawnedMonsters.Count - 1; i >= 0; i--)
+        for (int i = spawnedMonsters.Count - 1; i >= 0; i--)
         {
-            GameObject monster = _spawnedMonsters[i];
+            GameObject monster = spawnedMonsters[i];
             if (monster != null)
             {
                 NetworkServer.Destroy(monster);
             }
         }
 
-        _spawnedMonsters.Clear();
-        _hasSpawned = false;
-        _spawnRequested = false;
+        spawnedMonsters.Clear();
+        hasSpawned = false;
+        spawnRequested = false;
     }
 
     #endregion

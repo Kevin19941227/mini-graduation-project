@@ -18,7 +18,7 @@ MonoBehaviour:
   rarity: 0
   statModifiers: []
   hpBonus: 0
-  attackBonus: 0
+  attackBonus: 3
   moveSpeedBonus: 0
   defenseBonus: 0
   attackSpeedBonus: 0

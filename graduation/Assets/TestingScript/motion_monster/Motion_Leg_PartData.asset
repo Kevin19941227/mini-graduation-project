@@ -19,7 +19,7 @@ MonoBehaviour:
   statModifiers: []
   hpBonus: 0
   attackBonus: 0
-  moveSpeedBonus: 0
+  moveSpeedBonus: 0.45
   defenseBonus: 0
   attackSpeedBonus: 0
   passiveBuffs: []

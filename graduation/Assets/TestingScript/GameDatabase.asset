@@ -32,6 +32,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7e35cd360e9718542ac134b06c726263, type: 2}
   - {fileID: 11400000, guid: 637158d6bc2933d48af44780cd18e37b, type: 2}
   - {fileID: 11400000, guid: ea9ee8f72ff52e446b355994aca0b209, type: 2}
+  - {fileID: 11400000, guid: e4f4dd93e73a72d47bba526899377a8b, type: 2}
   monsters:
   - {fileID: 11400000, guid: 1835871c2a80c5f4c9e219423d8442e0, type: 2}
   dropTables:

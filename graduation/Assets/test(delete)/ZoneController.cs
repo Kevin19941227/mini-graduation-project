@@ -9,8 +9,8 @@ public class ZoneController : NetworkBehaviour
     [Header("縮圈設定")]
     public float initialRadius = 100f;       // 初始半徑
     public float finalRadius = 5f;           // 最終半徑
-    public float shrinkDelay = 5f;          // 幾秒後開始縮
-    public float shrinkDuration = 5f;       // 縮完需要幾秒
+    public float shrinkDelay = 1f;          // 幾秒後開始縮
+    public float shrinkDuration = 1f;       // 縮完需要幾秒
     public float damageInterval = 1f;        // 幾秒扣一次血
     public int damagePerTick = 1;            // 每次扣幾滴
 
@@ -36,6 +36,12 @@ public class ZoneController : NetworkBehaviour
 
     [SyncVar]
     private Vector3 _zoneCenter;
+
+    /// <summary>Current synchronized shrinking zone center for client-side UI displays.</summary>
+    public Vector3 ZoneCenter => _zoneCenter;
+
+    /// <summary>Current synchronized shrinking zone radius for client-side UI displays.</summary>
+    public float CurrentRadius => _currentRadius;
 
     private LineRenderer _lineRenderer;
     private MeshFilter _outsideZoneMeshFilter;
@@ -70,6 +76,7 @@ public class ZoneController : NetworkBehaviour
     {
         _lineRenderer = gameObject.AddComponent<LineRenderer>();
         _lineRenderer.loop = true;
+        _lineRenderer.useWorldSpace = true;
         _lineRenderer.positionCount = lineSegments;
         _lineRenderer.startWidth = lineWidth;
         _lineRenderer.endWidth = lineWidth;
@@ -190,7 +197,7 @@ public class ZoneController : NetworkBehaviour
         while (elapsed < shrinkDuration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / shrinkDuration;
+            float t = Mathf.Clamp01(elapsed / shrinkDuration);
             _currentRadius = Mathf.Lerp(initialRadius, finalRadius, t);
             yield return null;
         }
@@ -246,14 +253,16 @@ public class ZoneController : NetworkBehaviour
             int innerIndex = i * 2;
             int outerIndex = innerIndex + 1;
 
-            _outsideZoneVertices[innerIndex] = new Vector3(
+            Vector3 innerWorldPosition = new Vector3(
                 _zoneCenter.x + cos * _currentRadius,
                 y,
                 _zoneCenter.z + sin * _currentRadius);
-            _outsideZoneVertices[outerIndex] = new Vector3(
+            Vector3 outerWorldPosition = new Vector3(
                 _zoneCenter.x + cos * outerRadius,
                 y,
                 _zoneCenter.z + sin * outerRadius);
+            _outsideZoneVertices[innerIndex] = transform.InverseTransformPoint(innerWorldPosition);
+            _outsideZoneVertices[outerIndex] = transform.InverseTransformPoint(outerWorldPosition);
         }
 
         _outsideZoneMesh.Clear();
@@ -288,8 +297,8 @@ public class ZoneController : NetworkBehaviour
             float x = _zoneCenter.x + cos * _currentRadius;
             float z = _zoneCenter.z + sin * _currentRadius;
 
-            _zoneWallVertices[bottomIndex] = new Vector3(x, bottomY, z);
-            _zoneWallVertices[topIndex] = new Vector3(x, topY, z);
+            _zoneWallVertices[bottomIndex] = _zoneWallObject.transform.InverseTransformPoint(new Vector3(x, bottomY, z));
+            _zoneWallVertices[topIndex] = _zoneWallObject.transform.InverseTransformPoint(new Vector3(x, topY, z));
         }
 
         _zoneWallMesh.Clear();

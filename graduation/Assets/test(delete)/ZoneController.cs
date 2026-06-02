@@ -24,7 +24,7 @@ public class ZoneController : NetworkBehaviour
     [SerializeField, Min(1f)] private float fallbackOutsideRadiusMultiplier = 3f;
     [SerializeField] private string gameplaySceneName = "gamescene";
     [SerializeField, Min(1f)] private float zoneWallHeight = 800f;
-    [SerializeField, Min(0f)] private float zoneWallBottomOffset = 0f;
+    [SerializeField] private float zoneWallBottomOffset = 0f;
 
     [Header("Poison Screen")]
     [SerializeField] private GameObject poisonScreenPanel;

@@ -40,6 +40,7 @@ public class MapGenerator : MonoBehaviour
     private readonly float[] rotationAngles = { 0f, 90f, 180f, 270f };
 
     private Coroutine _generateRoutine;
+    private System.Random _generationRandom;
 
     public static event System.Action OnNavMeshReady;
     public static bool IsNavMeshReady { get; private set; }
@@ -108,8 +109,10 @@ public class MapGenerator : MonoBehaviour
 
     private void InitializeRandomSeed()
     {
-        if (seed != 0) Random.InitState(seed);
-        else Random.InitState(System.Environment.TickCount);
+        if (seed == 0)
+            seed = System.Environment.TickCount;
+
+        _generationRandom = new System.Random(seed);
     }
 
     private void UpdateTileSizeIfAuto()
@@ -151,7 +154,8 @@ public class MapGenerator : MonoBehaviour
     private Quaternion GetRandomRotation()
     {
         if (!useRandomRotation) return Quaternion.identity;
-        return Quaternion.Euler(0, rotationAngles[Random.Range(0, rotationAngles.Length)], 0);
+        int randomIndex = _generationRandom.Next(0, rotationAngles.Length);
+        return Quaternion.Euler(0, rotationAngles[randomIndex], 0);
     }
 
     private void SpawnTile(GameObject prefab, Vector3 gridPosition, Quaternion rotation, int x, int z)
@@ -226,15 +230,24 @@ public class MapGenerator : MonoBehaviour
             : transform.position;
     }
 
+    /// <summary>Returns a random generated tile center from every available tile.</summary>
     public Vector3 GetRandomTileCenter()
+    {
+        return GetRandomTileCenter(tileGridCenters.Count);
+    }
+
+    /// <summary>Returns a random generated tile center from the first candidateTileCount tiles.</summary>
+    public Vector3 GetRandomTileCenter(int candidateTileCount)
     {
         if (tileGridCenters.Count == 0)
         {
             Debug.LogWarning("[MapGenerator] GetRandomTileCenter: tileGridCenters is empty, falling back to transform.position");
             return transform.position;
         }
-        int idx = Random.Range(0, tileGridCenters.Count);
-        Debug.Log($"[MapGenerator] GetRandomTileCenter: count={tileGridCenters.Count}, picked index={idx}, pos={tileGridCenters[idx]}");
+
+        int safeCandidateCount = Mathf.Clamp(candidateTileCount, 1, tileGridCenters.Count);
+        int idx = Random.Range(0, safeCandidateCount);
+        Debug.Log($"[MapGenerator] GetRandomTileCenter: count={tileGridCenters.Count}, candidates={safeCandidateCount}, picked index={idx}, pos={tileGridCenters[idx]}");
         return tileGridCenters[idx];
     }
 
@@ -262,7 +275,7 @@ public class MapGenerator : MonoBehaviour
         for (int i = 0; i < list.Count; i++)
         {
             T temp = list[i];
-            int randomIndex = Random.Range(i, list.Count);
+            int randomIndex = _generationRandom.Next(i, list.Count);
             list[i] = list[randomIndex];
             list[randomIndex] = temp;
         }

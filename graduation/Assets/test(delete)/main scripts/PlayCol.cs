@@ -92,6 +92,11 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public int maxHp = 100;
     [SerializeField] private LayerMask attackHitMask = Physics.AllLayers;
 
+    [Header("Passive Regen")]
+    [SerializeField, Min(0f)] private float stationaryRegenDelay = 2f;
+    [SerializeField, Min(1)] private int stationaryRegenAmount = 5;
+    [SerializeField, Min(0.1f)] private float stationaryRegenInterval = 1f;
+
     [Header("打擊感設定")]
     public float hitStopDuration = 0.08f;
     public float hitKnockbackTime = 0.15f;
@@ -179,6 +184,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private float _stopAnimTimer = 0f;
     private const float MAX_STOP_ANIM_DURATION = 1.2f;
+    private float _serverStationaryTimer;
+    private float _serverRegenTimer;
 
     public bool IsDead => _hp <= 0 || _currentPose == PlayerPose.Die;
     public int CurrentHp => _hp;
@@ -213,6 +220,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (_hp <= 0) return;
 
         _hp -= damage;
+        ResetServerPassiveRegen();
         if (_hp <= 0)
         {
             _hp = 0;
@@ -423,6 +431,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     void Update()
     {
         UpdateServerDeathWatch();
+        UpdateServerPassiveRegen();
 
         if (!isLocalPlayer) return;
 
@@ -450,6 +459,46 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         Debug.Log($"{SurvivalMatchLogPrefix} Server death watch caught netId={netId}, hp={_hp}.");
         ServerHandleDeath();
+    }
+
+    [ServerCallback]
+    private void UpdateServerPassiveRegen()
+    {
+        if (!CanServerPassiveRegen())
+        {
+            ResetServerPassiveRegen();
+            return;
+        }
+
+        _serverStationaryTimer += Time.deltaTime;
+        if (_serverStationaryTimer < stationaryRegenDelay)
+        {
+            _serverRegenTimer = 0f;
+            return;
+        }
+
+        _serverRegenTimer += Time.deltaTime;
+        if (_serverRegenTimer < stationaryRegenInterval)
+            return;
+
+        _serverRegenTimer -= stationaryRegenInterval;
+        _hp = Mathf.Min(maxHp, _hp + stationaryRegenAmount);
+    }
+
+    [Server]
+    private bool CanServerPassiveRegen()
+    {
+        return _hp > 0
+            && _hp < maxHp
+            && !_syncIsMoving
+            && _syncPose == PlayerPose.Grounded;
+    }
+
+    [Server]
+    private void ResetServerPassiveRegen()
+    {
+        _serverStationaryTimer = 0f;
+        _serverRegenTimer = 0f;
     }
 
     private void HandleControlModeToggleInput()
@@ -1139,6 +1188,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         int finalDamage = Mathf.Max(MIN_DAMAGE_AFTER_DEFENSE, damage - _currentDefense);
         _hp -= finalDamage;
+        ResetServerPassiveRegen();
         if (_hp <= 0)
         {
             _hp = 0;

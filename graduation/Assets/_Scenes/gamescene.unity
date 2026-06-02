@@ -1751,7 +1751,7 @@ PrefabInstance:
     - target: {fileID: 1299443421828762120, guid: 3e0b8649e9c4a5c419aebea8977f8b53,
         type: 3}
       propertyPath: shrinkDuration
-      value: 60
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 1299443421828762120, guid: 3e0b8649e9c4a5c419aebea8977f8b53,
         type: 3}
@@ -2600,6 +2600,13 @@ MonoBehaviour:
   localPlayerMarkerColor: {r: 0, g: 1, b: 0, a: 1}
   remotePlayerMarkerColor: {r: 0, g: 0, b: 1, a: 1}
   monsterMarkerColor: {r: 1, g: 0, b: 0, a: 1}
+  showZone: 1
+  zoneLineSegments: 64
+  zoneLineWidth: 8
+  directionLineWidth: 10
+  directionLineLength: 120
+  zoneLineColor: {r: 0, g: 1, b: 1, a: 1}
+  outsideZoneDirectionColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
 --- !u!1 &2084961679
 GameObject:
   m_ObjectHideFlags: 0

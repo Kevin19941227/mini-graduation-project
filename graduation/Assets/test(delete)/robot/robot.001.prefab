@@ -1083,7 +1083,7 @@ MonoBehaviour:
   runSpeed: 6
   rotationSmoothTime: 0.1
   jumpForce: 15
-  jumpCooldown: 1
+  jumpCooldown: 2
   gravity: -30
   maxChargeTime: 3
   dashDistance: 7

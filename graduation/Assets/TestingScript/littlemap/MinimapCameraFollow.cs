@@ -35,6 +35,10 @@ public class MinimapCameraFollow : MonoBehaviour
     [SerializeField] private Color zoneLineColor = Color.cyan;
     [SerializeField] private Color outsideZoneDirectionColor = Color.yellow;
 
+    [Header("Performance")]
+    [SerializeField] private int renderEveryNFrames = 4;
+
+    private Camera minimapCamera;
     private Transform target;
     private Vector3 velocity;
     private float targetLookupTimer;
@@ -48,6 +52,17 @@ public class MinimapCameraFollow : MonoBehaviour
     private Material monsterMarkerMaterial;
     private readonly Dictionary<Transform, GameObject> markerObjects = new Dictionary<Transform, GameObject>();
 
+    private float lastZoneRadius = -1f;
+    private Vector3 lastZoneCenter;
+    private float lastMarkerY = float.MinValue;
+
+    private void Awake()
+    {
+        minimapCamera = GetComponent<Camera>();
+        if (minimapCamera != null)
+            minimapCamera.enabled = false;
+    }
+
     private void LateUpdate()
     {
         if (target == null)
@@ -60,6 +75,9 @@ public class MinimapCameraFollow : MonoBehaviour
 
         UpdateMarkers();
         UpdateZoneDisplay();
+
+        if (minimapCamera != null && Time.frameCount % renderEveryNFrames == 0)
+            minimapCamera.Render();
     }
 
     private void OnDestroy()
@@ -385,6 +403,13 @@ public class MinimapCameraFollow : MonoBehaviour
         Vector3 zoneCenter = zoneController.ZoneCenter;
         float radius = zoneController.CurrentRadius;
         float markerY = transform.position.y - markerDistanceBelowCamera;
+
+        if (radius == lastZoneRadius && zoneCenter == lastZoneCenter && markerY == lastMarkerY)
+            return;
+
+        lastZoneRadius = radius;
+        lastZoneCenter = zoneCenter;
+        lastMarkerY = markerY;
 
         for (int i = 0; i < safeSegments; i++)
         {

@@ -7,9 +7,9 @@
       "dependencies": {}
     },
     "com.persistant-studios.popcornfx.urp": {
-      "version": "file:C:/Users/kevin/un/package/PopcornFX/UnityURP_PopcornFXPlugin_v2.20.13/com.persistant-studios.popcornfx.urp",
+      "version": "file:com.persistant-studios.popcornfx.urp",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {
         "com.unity.render-pipelines.core": "10.2.2",
         "com.unity.render-pipelines.universal": "10.2.2",

@@ -18,7 +18,7 @@ public class MinimapCameraFollow : MonoBehaviour
 
     [Header("Minimap Markers")]
     [SerializeField] private bool generateMarkers = true;
-    [SerializeField] private float markerRefreshInterval = 0.5f;
+    [SerializeField] private float markerRefreshInterval = 2f;
     [SerializeField] private float markerDistanceBelowCamera = 10f;
     [SerializeField] private float playerMarkerSize = 5f;
     [SerializeField] private float monsterMarkerSize = 5f;

@@ -7,7 +7,7 @@ CEditorAssetRegistry	$D857A09F
 }
 CEditorAssetEntryDir	$35A36C4E
 {
-	InternalIndexedLastModifiedTime = uint2(414, 2095885783);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560075);
 	Assets = {
 		"$9154DFA0",
 		"$5F44DFAB",
@@ -21,7 +21,7 @@ CEditorFakeNodeRoot	$4B933A29
 CEditorAssetEntryDir	$9154DFA0
 {
 	Filename = "Editor";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117600);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559639);
 	Assets = {
 		"$EAC726E3",
 		"$4ADE8DE2",
@@ -32,7 +32,7 @@ CEditorAssetEntryDir	$9154DFA0
 CEditorAssetEntryDir	$EAC726E3
 {
 	Filename = "AnimationTracks";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117593);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557549);
 	Assets = {
 		"$AF0F155D",
 		"$DBE780E4",
@@ -41,17 +41,18 @@ CEditorAssetEntryDir	$EAC726E3
 CEditorAssetEntryDir	$4ADE8DE2
 {
 	Filename = "Cache";
-	InternalIndexedLastModifiedTime = uint2(414, 2100122553);
+	InternalIndexedLastModifiedTime = uint2(414, -1946805671);
 	Assets = {
 		"$A1CAADB2",
 		"$47461CE0",
 		"$3F47CEDC",
+		"$39A2145E",
 	};
 }
 CEditorAssetEntryDir	$D279714D
 {
 	Filename = "Presets";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117549);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559631);
 	Assets = {
 		"$5F621394",
 	};
@@ -60,7 +61,7 @@ CEditorAssetEntryDir	$D279714D
 CEditorAssetEntryDir	$5F621394
 {
 	Filename = "Effects";
-	InternalIndexedLastModifiedTime = uint2(414, 2059708230);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559637);
 	Assets = {
 		"$1A05FF77",
 		"$78A74806",
@@ -70,15 +71,16 @@ CEditorAssetEntryDir	$5F621394
 CEditorAssetEntryDir	$41E5AFE7
 {
 	Filename = "Thumbnails";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117578);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559667);
 	Assets = {
 		"$BEDF8936",
+		"$1373FB79",
 	};
 }
 CEditorAssetEntryDir	$BEDF8936
 {
 	Filename = "Editor";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117492);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559668);
 	Assets = {
 		"$2909A531",
 	};
@@ -86,7 +88,7 @@ CEditorAssetEntryDir	$BEDF8936
 CEditorAssetEntryDir	$2909A531
 {
 	Filename = "Presets";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117608);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559670);
 	Assets = {
 		"$D6EEA348",
 	};
@@ -94,12 +96,12 @@ CEditorAssetEntryDir	$2909A531
 CEditorAssetEntryDir	$D6EEA348
 {
 	Filename = "Effects";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117619);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559742);
 }
 CEditorAssetEntryDir	$5F44DFAB
 {
 	Filename = "Library";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117540);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559748);
 	Assets = {
 		"$D806D24A",
 	};
@@ -107,7 +109,7 @@ CEditorAssetEntryDir	$5F44DFAB
 CEditorAssetEntryDir	$D806D24A
 {
 	Filename = "PopcornFXCore";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117493);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560019);
 	Assets = {
 		"$D03359D5",
 		"$EC84D339",
@@ -117,7 +119,7 @@ CEditorAssetEntryDir	$D806D24A
 CEditorAssetEntryDir	$D03359D5
 {
 	Filename = "Materials";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117623);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559917);
 	Assets = {
 		"$C01E62BC",
 		"$9D2B1A2F",
@@ -148,7 +150,7 @@ CEditorAssetEntryDir	$D03359D5
 CEditorAssetEntryDir	$C01E62BC
 {
 	Filename = "DefaultTextures";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117624);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559810);
 	Assets = {
 		"$2FB70E0C",
 		"$36207FBF",
@@ -161,7 +163,7 @@ CEditorAssetEntryDir	$C01E62BC
 CEditorAssetEntryDir	$9D2B1A2F
 {
 	Filename = "Interface";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117461);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559820);
 	Assets = {
 		"$ED80C982",
 		"$0384856D",
@@ -171,7 +173,7 @@ CEditorAssetEntryDir	$9D2B1A2F
 CEditorAssetEntryDir	$55289D1E
 {
 	Filename = "Legacy";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117618);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559875);
 	Assets = {
 		"$D970BB07",
 		"$A913E2D6",
@@ -192,7 +194,7 @@ CEditorAssetEntryDir	$55289D1E
 CEditorAssetEntryDir	$EC84D339
 {
 	Filename = "Shaders";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117584);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559975);
 	Assets = {
 		"$2BBAE5F0",
 		"$14978373",
@@ -207,7 +209,7 @@ CEditorAssetEntryDir	$EC84D339
 CEditorAssetEntryDir	$2BBAE5F0
 {
 	Filename = "includes";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117601);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560017);
 	Assets = {
 		"$52697627",
 		"$256FAC76",
@@ -231,7 +233,7 @@ CEditorAssetEntryDir	$2BBAE5F0
 CEditorAssetEntryDir	$14978373
 {
 	Filename = "Legacy";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117611);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559964);
 	Assets = {
 		"$3E88DB46",
 		"$8D355881",
@@ -253,7 +255,7 @@ CEditorAssetEntryDir	$14978373
 CEditorAssetEntryDir	$89E0DDB2
 {
 	Filename = "Templates";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117612);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560071);
 	Assets = {
 		"$EF48E30B",
 		"$2C3FF00A",
@@ -271,16 +273,16 @@ CEditorAssetEntryDir	$89E0DDB2
 CEditorAssetEntryMesh	$AF0F155D
 {
 	Filename = "Circle.fbx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814795);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557488);
 	IndexedFileSize = 247338;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916318);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802020);
 	AnimTrackCountData = 1;
 	AnimLengthData = 1.2083334e+00;
 }
 CEditorAssetEntryMesh	$DBE780E4
 {
 	Filename = "PingPong.fbx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814799);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557506);
 	IndexedFileSize = 21292;
 	InternalLastDetailedAnalysisTime = uint2(414, 2056916413);
 	AnimTrackCountData = 1;
@@ -289,7 +291,7 @@ CEditorAssetEntryMesh	$DBE780E4
 CEditorAssetEntryEffect	$1A05FF77
 {
 	Filename = "Basic.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814805);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559632);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Events.pkfx",
 		"Library/PopcornFXCore/Templates/Core.pkfx",
@@ -301,7 +303,7 @@ CEditorAssetEntryEffect	$1A05FF77
 	};
 	IndexedFileSize = 31799;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916215);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802351);
 	IndexedFileVersion = "2.20.1.21981";
 	Description = {
 		"@eng:<b>Burst effect</b>, single layer of particles randomly instantly shooting out in a spherical shell.",
@@ -315,7 +317,7 @@ CEditorAssetEntryEffect	$1A05FF77
 CEditorAssetEntryEffect	$78A74806
 {
 	Filename = "FX_Simple.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814808);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559634);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
 		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
@@ -327,7 +329,7 @@ CEditorAssetEntryEffect	$78A74806
 	};
 	IndexedFileSize = 33214;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916216);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802400);
 	IndexedFileVersion = "2.20.1.21981";
 	Description = {
 		"@eng:<b>Fountain effect</b>, indefinitely spawns a vertical rising stream of particles, falling back down under gravity.\\nInfinite effect.",
@@ -341,7 +343,7 @@ CEditorAssetEntryEffect	$78A74806
 CEditorAssetEntryMaterial	$AF09E441
 {
 	Filename = "Billboard_AnimatedMasked.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814831);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559751);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
@@ -371,7 +373,7 @@ CEditorAssetEntryMaterial	$AF09E441
 CEditorAssetEntryMaterial	$0C954798
 {
 	Filename = "Billboard_Distortion.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814832);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559753);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -401,7 +403,7 @@ CEditorAssetEntryMaterial	$0C954798
 CEditorAssetEntryMaterial	$B4F3323B
 {
 	Filename = "Billboard_Opaque.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814834);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559755);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -431,7 +433,7 @@ CEditorAssetEntryMaterial	$B4F3323B
 CEditorAssetEntryMaterial	$1EA3501A
 {
 	Filename = "Billboard_Transparent.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814837);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559776);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -461,7 +463,7 @@ CEditorAssetEntryMaterial	$1EA3501A
 CEditorAssetEntryMaterial	$7837C3E5
 {
 	Filename = "Decal_Default.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814841);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559778);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Decal_Default.vert",
@@ -492,10 +494,10 @@ CEditorAssetEntryMaterial	$7837C3E5
 CEditorAssetEntryTexture	$2FB70E0C
 {
 	Filename = "Black.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814843);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559782);
 	IndexedFileSize = 1492;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916112);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802658);
 	DimensionsData = uint4(16, 16, 1, 0);
 	MipmapCountData = 5;
 	FormatData = "BGRA8";
@@ -503,10 +505,10 @@ CEditorAssetEntryTexture	$2FB70E0C
 CEditorAssetEntryTexture	$36207FBF
 {
 	Filename = "Default_AlphaMap.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814846);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559785);
 	IndexedFileSize = 349652;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916117);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802633);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 9;
 	FormatData = "BGRA8";
@@ -514,10 +516,10 @@ CEditorAssetEntryTexture	$36207FBF
 CEditorAssetEntryTexture	$E54029EE
 {
 	Filename = "Diffuse.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814849);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559788);
 	IndexedFileSize = 21972;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916123);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802614);
 	DimensionsData = uint4(64, 64, 1, 0);
 	MipmapCountData = 7;
 	FormatData = "BGRA8";
@@ -525,10 +527,10 @@ CEditorAssetEntryTexture	$E54029EE
 CEditorAssetEntryTexture	$5209F849
 {
 	Filename = "Distort.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814850);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559791);
 	IndexedFileSize = 16512;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916128);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802593);
 	DimensionsData = uint4(64, 64, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -536,10 +538,10 @@ CEditorAssetEntryTexture	$5209F849
 CEditorAssetEntryTexture	$F1356840
 {
 	Filename = "NMap_Flat.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814855);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559793);
 	IndexedFileSize = 1152;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916129);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802574);
 	DimensionsData = uint4(16, 16, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -547,10 +549,10 @@ CEditorAssetEntryTexture	$F1356840
 CEditorAssetEntryTexture	$D0980C03
 {
 	Filename = "White.dds";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814857);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559809);
 	IndexedFileSize = 1492;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916135);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802554);
 	DimensionsData = uint4(16, 16, 1, 0);
 	MipmapCountData = 5;
 	FormatData = "BGRA8";
@@ -558,7 +560,7 @@ CEditorAssetEntryTexture	$D0980C03
 CEditorAssetEntryRendererInterface	$ED80C982
 {
 	Filename = "Default.pkri";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814860);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559813);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/DefaultTextures/White.dds",
 		"Library/PopcornFXCore/Materials/DefaultTextures/Distort.dds",
@@ -572,7 +574,7 @@ CEditorAssetEntryRendererInterface	$ED80C982
 CEditorAssetEntryRendererInterface	$0384856D
 {
 	Filename = "Legacy.pkri";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814862);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559817);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/DefaultTextures/White.dds",
 		"Library/PopcornFXCore/Materials/DefaultTextures/Distort.dds",
@@ -587,7 +589,7 @@ CEditorAssetEntryRendererInterface	$0384856D
 CEditorAssetEntryRendererInterface	$96A2AA34
 {
 	Filename = "SkeletalAnimationTexture.pkri";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814866);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559819);
 	IndexedFileSize = 11030;
 	Dirty = true;
 	IndexedFileVersion = "2.20.1.21981";
@@ -595,7 +597,7 @@ CEditorAssetEntryRendererInterface	$96A2AA34
 CEditorAssetEntryMaterial	$D970BB07
 {
 	Filename = "Legacy_Animated_Mesh.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814868);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559823);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/AnimatedMesh.vert",
@@ -611,7 +613,7 @@ CEditorAssetEntryMaterial	$D970BB07
 CEditorAssetEntryMaterial	$A913E2D6
 {
 	Filename = "Legacy_Default_Billboard.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814870);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559825);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Billboard.frag",
@@ -625,7 +627,7 @@ CEditorAssetEntryMaterial	$A913E2D6
 CEditorAssetEntryMaterial	$17E22F51
 {
 	Filename = "Legacy_Default_Decal.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814873);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559844);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Decal.vert",
@@ -640,7 +642,7 @@ CEditorAssetEntryMaterial	$17E22F51
 CEditorAssetEntryMaterial	$8EAEE7E8
 {
 	Filename = "Legacy_Default_Light.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814875);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559847);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Light.vert",
@@ -654,7 +656,7 @@ CEditorAssetEntryMaterial	$8EAEE7E8
 CEditorAssetEntryMaterial	$125230CB
 {
 	Filename = "Legacy_Default_Mesh.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814878);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559850);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Mesh.frag",
@@ -668,7 +670,7 @@ CEditorAssetEntryMaterial	$125230CB
 CEditorAssetEntryMaterial	$F527E9EA
 {
 	Filename = "Legacy_Default_Ribbon.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814881);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559852);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Ribbon.frag",
@@ -682,7 +684,7 @@ CEditorAssetEntryMaterial	$F527E9EA
 CEditorAssetEntryMaterial	$E7F879F5
 {
 	Filename = "Legacy_Default_Sound.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814883);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559855);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 	};
@@ -694,7 +696,7 @@ CEditorAssetEntryMaterial	$E7F879F5
 CEditorAssetEntryMaterial	$C45BF55C
 {
 	Filename = "Legacy_Default_Triangle.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814885);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559858);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Default_Triangle.frag",
@@ -707,7 +709,7 @@ CEditorAssetEntryMaterial	$C45BF55C
 CEditorAssetEntryMaterial	$22B8D14F
 {
 	Filename = "Legacy_Distortion_Billboard.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814888);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559862);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Particle_Master.frag",
@@ -721,7 +723,7 @@ CEditorAssetEntryMaterial	$22B8D14F
 CEditorAssetEntryMaterial	$AAFF12BE
 {
 	Filename = "Legacy_Distortion_Ribbon.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814891);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559864);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Particle_Master.frag",
@@ -735,7 +737,7 @@ CEditorAssetEntryMaterial	$AAFF12BE
 CEditorAssetEntryMaterial	$6C5BA959
 {
 	Filename = "Legacy_Opaque_Billboard.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814893);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559867);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Opaque_Billboard.frag",
@@ -749,7 +751,7 @@ CEditorAssetEntryMaterial	$6C5BA959
 CEditorAssetEntryMaterial	$09F16690
 {
 	Filename = "Legacy_Opaque_Ribbon.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814895);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559869);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Opaque_Ribbon.frag",
@@ -763,7 +765,7 @@ CEditorAssetEntryMaterial	$09F16690
 CEditorAssetEntryMaterial	$23F9C093
 {
 	Filename = "Legacy_Opaque_Triangle.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814898);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559872);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Opaque_Triangle.frag",
@@ -776,7 +778,7 @@ CEditorAssetEntryMaterial	$23F9C093
 CEditorAssetEntryMaterial	$5A435152
 {
 	Filename = "Legacy_Transparent_Mesh.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814901);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559874);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Legacy.pkri",
 		"Library/PopcornFXCore/Shaders/Legacy/Transparent_Mesh.frag",
@@ -790,7 +792,7 @@ CEditorAssetEntryMaterial	$5A435152
 CEditorAssetEntryMaterial	$9C42C17D
 {
 	Filename = "Light_Default.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814903);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559877);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Light_Default.vert",
@@ -808,7 +810,7 @@ CEditorAssetEntryMaterial	$9C42C17D
 CEditorAssetEntryMaterial	$AFB08F84
 {
 	Filename = "Mesh_AnimatedMasked.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814906);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559881);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
@@ -838,7 +840,7 @@ CEditorAssetEntryMaterial	$AFB08F84
 CEditorAssetEntryMaterial	$E406E297
 {
 	Filename = "Mesh_Emissive.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814909);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559883);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -868,7 +870,7 @@ CEditorAssetEntryMaterial	$E406E297
 CEditorAssetEntryMaterial	$A11A59A6
 {
 	Filename = "Mesh_Opaque.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814911);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559887);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -898,7 +900,7 @@ CEditorAssetEntryMaterial	$A11A59A6
 CEditorAssetEntryMaterial	$DD2B8661
 {
 	Filename = "Mesh_Tinted.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814913);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559889);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -928,7 +930,7 @@ CEditorAssetEntryMaterial	$DD2B8661
 CEditorAssetEntryMaterial	$1A488438
 {
 	Filename = "Ribbon_AnimatedMasked.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814916);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559892);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
@@ -958,7 +960,7 @@ CEditorAssetEntryMaterial	$1A488438
 CEditorAssetEntryMaterial	$42F2DB5B
 {
 	Filename = "Ribbon_CorrectDeformation_Distortion.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814920);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559894);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -988,7 +990,7 @@ CEditorAssetEntryMaterial	$42F2DB5B
 CEditorAssetEntryMaterial	$55F99FBA
 {
 	Filename = "Ribbon_CorrectDeformation_Opaque.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814923);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559897);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1018,7 +1020,7 @@ CEditorAssetEntryMaterial	$55F99FBA
 CEditorAssetEntryMaterial	$C73E7C05
 {
 	Filename = "Ribbon_CorrectDeformation_Transparent.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814926);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559899);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1048,7 +1050,7 @@ CEditorAssetEntryMaterial	$C73E7C05
 CEditorAssetEntryMaterial	$ED0A18AC
 {
 	Filename = "Ribbon_Distortion.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814929);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559902);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1078,7 +1080,7 @@ CEditorAssetEntryMaterial	$ED0A18AC
 CEditorAssetEntryMaterial	$CF350EDF
 {
 	Filename = "Ribbon_Opaque.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814932);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559905);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1108,7 +1110,7 @@ CEditorAssetEntryMaterial	$CF350EDF
 CEditorAssetEntryMaterial	$773A578E
 {
 	Filename = "Ribbon_Transparent.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814934);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559907);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1138,7 +1140,7 @@ CEditorAssetEntryMaterial	$773A578E
 CEditorAssetEntryMaterial	$4272E669
 {
 	Filename = "Sound_Default.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814937);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559909);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 	};
@@ -1150,7 +1152,7 @@ CEditorAssetEntryMaterial	$4272E669
 CEditorAssetEntryMaterial	$1BDBE0E0
 {
 	Filename = "Triangle_Distortion.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814940);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559912);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1179,7 +1181,7 @@ CEditorAssetEntryMaterial	$1BDBE0E0
 CEditorAssetEntryMaterial	$84ADA123
 {
 	Filename = "Triangle_Opaque.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814942);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559914);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1208,7 +1210,7 @@ CEditorAssetEntryMaterial	$84ADA123
 CEditorAssetEntryMaterial	$946D7522
 {
 	Filename = "Triangle_Transparent.pkma";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814945);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559916);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Interface/Default.pkri",
 		"Library/PopcornFXCore/Shaders/Particle_Master.frag",
@@ -1237,279 +1239,279 @@ CEditorAssetEntryMaterial	$946D7522
 CEditorAssetEntryVertexShader	$C072C98D
 {
 	Filename = "AnimatedMesh.vert";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814947);
-	IndexedFileSize = 8210;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559920);
+	IndexedFileSize = 8432;
 	Dirty = true;
 }
 CEditorAssetEntryVertexShader	$F8EE30D4
 {
 	Filename = "Decal_Default.vert";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814949);
-	IndexedFileSize = 483;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559923);
+	IndexedFileSize = 494;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$52697627
 {
 	Filename = "FeatureAlphaMasks.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814952);
-	IndexedFileSize = 4060;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559976);
+	IndexedFileSize = 4153;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$256FAC76
 {
 	Filename = "FeatureAtlas.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814955);
-	IndexedFileSize = 5090;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559980);
+	IndexedFileSize = 5262;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$173EE971
 {
 	Filename = "FeatureDecal.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814957);
-	IndexedFileSize = 734;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559982);
+	IndexedFileSize = 756;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$122F1C88
 {
 	Filename = "FeatureDiffuse.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814960);
-	IndexedFileSize = 2135;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559984);
+	IndexedFileSize = 2195;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$CB2631EB
 {
 	Filename = "FeatureDistortion.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814963);
-	IndexedFileSize = 891;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559987);
+	IndexedFileSize = 914;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$033D718A
 {
 	Filename = "FeatureDithering.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814966);
-	IndexedFileSize = 1188;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559989);
+	IndexedFileSize = 1224;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$4092CA15
 {
 	Filename = "FeatureEmissive.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814968);
-	IndexedFileSize = 1299;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559992);
+	IndexedFileSize = 1336;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$727E77FC
 {
 	Filename = "FeatureFastLit.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814970);
-	IndexedFileSize = 6814;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559994);
+	IndexedFileSize = 6979;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$2496386F
 {
 	Filename = "FeatureRibbonCorrectDeformation.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814973);
-	IndexedFileSize = 658;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559996);
+	IndexedFileSize = 686;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$F686F85E
 {
 	Filename = "FeatureSoftParticles.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814976);
-	IndexedFileSize = 1203;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560000);
+	IndexedFileSize = 1237;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$0208AF79
 {
 	Filename = "FeatureTint.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814978);
-	IndexedFileSize = 650;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560002);
+	IndexedFileSize = 671;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$9AA1D730
 {
 	Filename = "FeatureTransformedNoises.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814981);
-	IndexedFileSize = 3607;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560007);
+	IndexedFileSize = 3687;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$6964ADB3
 {
 	Filename = "FeatureTransformUVs.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814985);
-	IndexedFileSize = 2534;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560004);
+	IndexedFileSize = 2620;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$100434F2
 {
 	Filename = "FeatureUVDistortions.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814988);
-	IndexedFileSize = 1642;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560009);
+	IndexedFileSize = 1674;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$41FD9D9D
 {
 	Filename = "PKLighting.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814991);
-	IndexedFileSize = 12558;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560012);
+	IndexedFileSize = 12872;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$45F88E24
 {
 	Filename = "PKOutputColor.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814993);
-	IndexedFileSize = 2101;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560015);
+	IndexedFileSize = 2157;
 	Dirty = true;
 }
 CEditorAssetEntryShaderInclude	$81F975B7
 {
 	Filename = "PKSurface.h";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814996);
-	IndexedFileSize = 7374;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560017);
+	IndexedFileSize = 7629;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$3E88DB46
 {
 	Filename = "Default_Billboard.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814999);
-	IndexedFileSize = 13987;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559928);
+	IndexedFileSize = 14391;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$8D355881
 {
 	Filename = "Default_Decal.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815001);
-	IndexedFileSize = 4025;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559931);
+	IndexedFileSize = 4137;
 	Dirty = true;
 }
 CEditorAssetEntryVertexShader	$CEEFB0D8
 {
 	Filename = "Default_Decal.vert";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815005);
-	IndexedFileSize = 483;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559933);
+	IndexedFileSize = 494;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$77FD347B
 {
 	Filename = "Default_Light.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815007);
-	IndexedFileSize = 7997;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559936);
+	IndexedFileSize = 8224;
 	Dirty = true;
 }
 CEditorAssetEntryVertexShader	$56D85F5A
 {
 	Filename = "Default_Light.vert";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815009);
-	IndexedFileSize = 846;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559938);
+	IndexedFileSize = 866;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$113E6425
 {
 	Filename = "Default_Mesh.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815011);
-	IndexedFileSize = 8775;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559941);
+	IndexedFileSize = 9061;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$C736134C
 {
 	Filename = "Default_Ribbon.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815016);
-	IndexedFileSize = 14623;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559943);
+	IndexedFileSize = 15047;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$189D4DFF
 {
 	Filename = "Default_Triangle.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815018);
-	IndexedFileSize = 6144;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559946);
+	IndexedFileSize = 6322;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$8139F52E
 {
 	Filename = "Distortion_Billboard.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815021);
-	IndexedFileSize = 3137;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559948);
+	IndexedFileSize = 3231;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$0F960489
 {
 	Filename = "Distortion_Ribbon.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815024);
-	IndexedFileSize = 3634;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559950);
+	IndexedFileSize = 3749;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$17B04980
 {
 	Filename = "Opaque_Billboard.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815027);
-	IndexedFileSize = 9164;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559953);
+	IndexedFileSize = 9458;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$D98FE643
 {
 	Filename = "Opaque_Ribbon.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815029);
-	IndexedFileSize = 9794;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559955);
+	IndexedFileSize = 10108;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$C0CC90C2
 {
 	Filename = "Opaque_Triangle.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815031);
-	IndexedFileSize = 2156;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559958);
+	IndexedFileSize = 2225;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$8D8C3DAD
 {
 	Filename = "Particle_Master.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815036);
-	IndexedFileSize = 17348;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559960);
+	IndexedFileSize = 17831;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$BC2CA774
 {
 	Filename = "Transparent_Mesh.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815038);
-	IndexedFileSize = 5619;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559962);
+	IndexedFileSize = 5798;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$A4D7E147
 {
 	Filename = "Light_Default.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815041);
-	IndexedFileSize = 823;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559966);
+	IndexedFileSize = 849;
 	Dirty = true;
 }
 CEditorAssetEntryVertexShader	$089AE616
 {
 	Filename = "Light_Default.vert";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815044);
-	IndexedFileSize = 846;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559968);
+	IndexedFileSize = 866;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$C4E7D391
 {
 	Filename = "Noise_Billboard.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815046);
-	IndexedFileSize = 4320;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559970);
+	IndexedFileSize = 4454;
 	Dirty = true;
 }
 CEditorAssetEntryFragmentShader	$EED74128
 {
 	Filename = "Particle_Master.frag";
-	InternalIndexedLastModifiedTime = uint2(414, 2056815048);
-	IndexedFileSize = 5308;
+	InternalIndexedLastModifiedTime = uint2(414, 2136559973);
+	IndexedFileSize = 5467;
 	Dirty = true;
 }
 CEditorAssetEntryEffect	$EF48E30B
 {
 	Filename = "Color.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814560);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560023);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 	};
-	IndexedFileSize = 117912;
+	IndexedFileSize = 124817;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916150);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802518);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$126F692A",
@@ -2434,10 +2436,10 @@ CEditorTemplatePinEntry	$0AD9166B
 CEditorAssetEntryEffect	$2C3FF00A
 {
 	Filename = "Core.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814579);
-	IndexedFileSize = 685925;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560031);
+	IndexedFileSize = 725334;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916163);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802484);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$B0EFEA95",
@@ -9631,10 +9633,10 @@ CEditorTemplatePinEntry	$D8D910A3
 CEditorAssetEntryEffect	$C6BDDAA2
 {
 	Filename = "CurvePresets.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814586);
-	IndexedFileSize = 20816;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560033);
+	IndexedFileSize = 22102;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916167);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802469);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$E6B05D0D",
@@ -9924,14 +9926,14 @@ CEditorTemplateEntry	$29773258
 CEditorAssetEntryEffect	$ACF213FB
 {
 	Filename = "Debug.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814596);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560035);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Color.pkfx",
 	};
-	IndexedFileSize = 109265;
+	IndexedFileSize = 115632;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916180);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802436);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$DBF6F4DA",
@@ -10469,15 +10471,15 @@ CEditorTemplatePinEntry	$081B2841
 CEditorAssetEntryEffect	$5A9DDB98
 {
 	Filename = "Dynamics.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814616);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560042);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Samplers.pkfx",
 		"Library/PopcornFXCore/Templates/Utils.pkfx",
 	};
-	IndexedFileSize = 738434;
+	IndexedFileSize = 784840;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916217);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802333);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$249D563B",
@@ -13820,14 +13822,14 @@ CEditorTemplatePinEntry	$896C8126
 CEditorAssetEntryEffect	$E6CD03E1
 {
 	Filename = "Events.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814629);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560048);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Samplers.pkfx",
 	};
-	IndexedFileSize = 386898;
+	IndexedFileSize = 410413;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916252);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802282);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$8B210FB8",
@@ -15459,16 +15461,16 @@ CEditorTemplatePinEntry	$74AE6FBD
 CEditorAssetEntryEffect	$CED2BAC4
 {
 	Filename = "Legacy.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814650);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560052);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Events.pkfx",
 		"Library/PopcornFXCore/Templates/Samplers.pkfx",
 		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
 	};
-	IndexedFileSize = 793620;
+	IndexedFileSize = 843573;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916288);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802164);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$35B2CED7",
@@ -18867,14 +18869,14 @@ CEditorTemplatePinEntry	$E1EC6C41
 CEditorAssetEntryEffect	$D8666F98
 {
 	Filename = "Placement.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814660);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560056);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Events.pkfx",
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 	};
-	IndexedFileSize = 196048;
+	IndexedFileSize = 207681;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916267);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802229);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$9F077A3B",
@@ -20094,14 +20096,14 @@ CEditorTemplatePinEntry	$C2DE8F87
 CEditorAssetEntryEffect	$BFF41156
 {
 	Filename = "Samplers.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814677);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560063);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Color.pkfx",
 	};
-	IndexedFileSize = 570633;
+	IndexedFileSize = 604063;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916277);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802209);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$E796BFD1",
@@ -25129,13 +25131,13 @@ CEditorTemplatePinEntry	$049425A8
 CEditorAssetEntryEffect	$421D618B
 {
 	Filename = "Trails.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814686);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560066);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 	};
-	IndexedFileSize = 113853;
+	IndexedFileSize = 120975;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916284);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802184);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$280689AA",
@@ -25477,7 +25479,7 @@ CEditorTemplatePinEntry	$7E1B5CB2
 CEditorAssetEntryEffect	$B58C005D
 {
 	Filename = "Utils.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2056814700);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560070);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Materials/Legacy/Legacy_Default_Sound.pkma",
@@ -25490,9 +25492,9 @@ CEditorAssetEntryEffect	$B58C005D
 		"Library/PopcornFXCore/Templates/Color.pkfx",
 		"Library/PopcornFXCore/Materials/DefaultTextures/NMap_Flat.dds",
 	};
-	IndexedFileSize = 479873;
+	IndexedFileSize = 508380;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916322);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802084);
 	IndexedFileVersion = "2.20.13.26695";
 	IndexedTemplates = {
 		"$E36147E4",
@@ -28090,25 +28092,27 @@ CEditorTemplatePinEntry	$57953269
 CEditorAssetEntryDir	$A1CAADB2
 {
 	Filename = "Shaders";
-	InternalIndexedLastModifiedTime = uint2(414, 2097718011);
+	InternalIndexedLastModifiedTime = uint2(414, 2136559598);
 }
 CEditorAssetEntryDir	$47461CE0
 {
 	Filename = "Editor";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117512);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557605);
 	Assets = {
 		"$0F068D23",
+		"$A72DB571",
+		"$C03C73FC",
 	};
 }
 CEditorAssetEntryDir	$0F068D23
 {
 	Filename = "AnimationTracks";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117619);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557564);
 }
 CEditorAssetEntryDir	$3F47CEDC
 {
 	Filename = "Library";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117587);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557671);
 	Assets = {
 		"$2AFBCDCF",
 	};
@@ -28116,7 +28120,7 @@ CEditorAssetEntryDir	$3F47CEDC
 CEditorAssetEntryDir	$2AFBCDCF
 {
 	Filename = "PopcornFXCore";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117450);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557673);
 	Assets = {
 		"$93B07A4B",
 	};
@@ -28124,7 +28128,7 @@ CEditorAssetEntryDir	$2AFBCDCF
 CEditorAssetEntryDir	$93B07A4B
 {
 	Filename = "Materials";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117550);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557675);
 	Assets = {
 		"$464B306E",
 	};
@@ -28132,7 +28136,7 @@ CEditorAssetEntryDir	$93B07A4B
 CEditorAssetEntryDir	$464B306E
 {
 	Filename = "DefaultTextures";
-	InternalIndexedLastModifiedTime = uint2(414, 2059117497);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557791);
 	Assets = {
 		"$DAA02D73",
 		"$65100958",
@@ -28145,10 +28149,10 @@ CEditorAssetEntryDir	$464B306E
 CEditorAssetEntryTexture	$DAA02D73
 {
 	Filename = "Black.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571720);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557688);
 	IndexedFileSize = 935;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918201);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802176);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28156,10 +28160,10 @@ CEditorAssetEntryTexture	$DAA02D73
 CEditorAssetEntryTexture	$65100958
 {
 	Filename = "Default_AlphaMap.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571734);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557720);
 	IndexedFileSize = 19029;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918203);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802174);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28167,10 +28171,10 @@ CEditorAssetEntryTexture	$65100958
 CEditorAssetEntryTexture	$1907046C
 {
 	Filename = "Diffuse.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571747);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557738);
 	IndexedFileSize = 29016;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918205);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802172);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28178,10 +28182,10 @@ CEditorAssetEntryTexture	$1907046C
 CEditorAssetEntryTexture	$87A5875F
 {
 	Filename = "Distort.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571754);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557754);
 	IndexedFileSize = 936;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918206);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802169);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28189,10 +28193,10 @@ CEditorAssetEntryTexture	$87A5875F
 CEditorAssetEntryTexture	$DA82EEC8
 {
 	Filename = "NMap_Flat.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571790);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557772);
 	IndexedFileSize = 936;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918208);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802168);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28200,10 +28204,10 @@ CEditorAssetEntryTexture	$DA82EEC8
 CEditorAssetEntryTexture	$CF6961B3
 {
 	Filename = "White.dds.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2058571796);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557790);
 	IndexedFileSize = 935;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2058918210);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802166);
 	DimensionsData = uint4(256, 256, 1, 0);
 	MipmapCountData = 1;
 	FormatData = "BGRA8";
@@ -28211,37 +28215,40 @@ CEditorAssetEntryTexture	$CF6961B3
 CEditorAssetEntryDir	$4C02D122
 {
 	Filename = "Content";
-	InternalIndexedLastModifiedTime = uint2(414, 2100101836);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557369);
 	Assets = {
 		"$06C5558D",
+		"$E3891330",
+		"$707E99B3",
 	};
 	CB_Expanded = true;
 }
 CEditorAssetEntryEffect	$06C5558D
 {
 	Filename = "sparks.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2100101833);
+	InternalIndexedLastModifiedTime = uint2(414, 2136557365);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
 		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
 		"Library/PopcornFXCore/Templates/Events.pkfx",
 		"Library/PopcornFXCore/Templates/Core.pkfx",
-		"Textures/—Pngtree—light effect glow_6320136.png",
+		"Textures/Alpha0.png",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
 	};
-	IndexedFileSize = 27113;
+	IndexedFileSize = 32141;
 	Dirty = true;
-	InternalLastDetailedAnalysisTime = uint2(414, 2100122847);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946801870);
 	IndexedFileVersion = "2.20.13.26695";
 	LayersData = 3;
 	NodeGraphCountData = 1;
-	InstructionCountData = 139;
+	InstructionCountData = 147;
 	LanguagesData = "eng";
 	NodeStatsCountData = 2;
 }
 CEditorAssetEntryDir	$D92DACD4
 {
 	Filename = "Textures";
-	InternalIndexedLastModifiedTime = uint2(414, 2100113924);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560122);
 	Assets = {
 		"$DBA0A227",
 		"$7A204876",
@@ -28251,14 +28258,202 @@ CEditorAssetEntryDir	$D92DACD4
 CEditorAssetEntryTexture	$DBA0A227
 {
 	Filename = "—Pngtree—light effect glow_6320136.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2095736567);
+	InternalIndexedLastModifiedTime = uint2(414, 2136560120);
 	IndexedFileSize = 4042655;
 	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, -1946801854);
+	DimensionsData = uint4(3000, 3000, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "LumAlpha8";
 }
 CEditorAssetEntryTexture	$7A204876
 {
 	Filename = "Alpha0.png";
-	InternalIndexedLastModifiedTime = uint2(414, 2100079785);
-	IndexedFileSize = 1609;
+	InternalIndexedLastModifiedTime = uint2(414, 2136560089);
+	IndexedFileSize = 162591;
+	Dirty = true;
+	InternalLastDetailedAnalysisTime = uint2(414, -1946802015);
+	DimensionsData = uint4(593, 468, 1, 0);
+	MipmapCountData = 1;
+	FormatData = "BGRA8";
+}
+CEditorAssetEntryDir	$A72DB571
+{
+	Filename = "Cache";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557591);
+	Assets = {
+		"$321FD888",
+		"$38C9D615",
+	};
+}
+CEditorAssetEntryDir	$321FD888
+{
+	Filename = "Editor";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557569);
+	Assets = {
+		"$09479DEB",
+	};
+}
+CEditorAssetEntryDir	$09479DEB
+{
+	Filename = "Thumbnails";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557571);
+	Assets = {
+		"$9E054D8A",
+	};
+}
+CEditorAssetEntryDir	$9E054D8A
+{
+	Filename = "Content";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557588);
+	Assets = {
+		"$69A1A1B7",
+	};
+}
+CEditorAssetEntryDir	$38C9D615
+{
+	Filename = "Textures";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557603);
+	Assets = {
+		"$29FE7746",
+	};
+}
+CEditorAssetEntryDir	$C03C73FC
+{
+	Filename = "Thumbnails";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557607);
+	Assets = {
+		"$51EDE46F",
+	};
+}
+CEditorAssetEntryDir	$51EDE46F
+{
+	Filename = "Content";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557667);
+	Assets = {
+		"$68CD2481",
+		"$DF3D6CD8",
+		"$0F3FA07B",
+	};
+}
+CEditorAssetEntryDir	$39A2145E
+{
+	Filename = "Textures";
+	InternalIndexedLastModifiedTime = uint2(414, 2136559625);
+	Assets = {
+		"$C0D53B5A",
+		"$BE4E7025",
+	};
+}
+CEditorAssetEntryDir	$1373FB79
+{
+	Filename = "Content";
+	InternalIndexedLastModifiedTime = uint2(414, 2136559665);
+}
+CEditorAssetEntryEffect	$E3891330
+{
+	Filename = "light.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557362);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+		"Library/PopcornFXCore/Templates/Color.pkfx",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+		"Library/PopcornFXCore/Materials/DefaultTextures/Diffuse.dds",
+	};
+	IndexedFileSize = 33046;
+	Dirty = true;
+	IndexedFileVersion = "2.20.13.26695";
+}
+CEditorAssetEntryEffect	$707E99B3
+{
+	Filename = "sparks_2.pkfx";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557368);
+	AssetDependencies = {
+		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
+		"Library/PopcornFXCore/Templates/Events.pkfx",
+		"Textures/Alpha0.png",
+		"Library/PopcornFXCore/Templates/Core.pkfx",
+		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
+		"Library/PopcornFXCore/Materials/DefaultTextures/White.dds",
+		"Library/PopcornFXCore/Templates/Utils.pkfx",
+	};
+	IndexedFileSize = 49328;
+	Dirty = true;
+	IndexedFileVersion = "2.20.13.26695";
+	IndexedTemplates = {
+		"$B2EE90F2",
+		"$7BC9299D",
+		"$F2A50A24",
+	};
+}
+CEditorTemplateEntry	$B2EE90F2
+{
+	CustomName = "SparkPhysics";
+	EmitDeprecationWarning = true;
+	ObjectUID = 550393175;
+}
+CEditorTemplateEntry	$7BC9299D
+{
+	CustomName = "Sparllife";
+	EmitDeprecationWarning = true;
+	ObjectUID = 1423306343;
+}
+CEditorTemplateEntry	$F2A50A24
+{
+	CustomName = "SparkColor";
+	ClassType = Sampler;
+	EmitDeprecationWarning = true;
+	ObjectUID = 1831642001;
+}
+CEditorAssetEntryTexture	$69A1A1B7
+{
+	Filename = "light.pkfx.anim.png.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557582);
+	IndexedFileSize = 3083;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$29FE7746
+{
+	Filename = "Alpha0.pkim.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557601);
+	IndexedFileSize = 36345;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$68CD2481
+{
+	Filename = "light.pkfx.anim.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557626);
+	IndexedFileSize = 901119;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$DF3D6CD8
+{
+	Filename = "light.pkfx.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557652);
+	IndexedFileSize = 64534;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$0F3FA07B
+{
+	Filename = "sparks_2.pkfx.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136557666);
+	IndexedFileSize = 54261;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$C0D53B5A
+{
+	Filename = "Alpha0.pkim";
+	InternalIndexedLastModifiedTime = uint2(414, 2136559606);
+	IndexedFileSize = 1110136;
+	Dirty = true;
+}
+CEditorAssetEntryTexture	$BE4E7025
+{
+	Filename = "Alpha0.png.png";
+	InternalIndexedLastModifiedTime = uint2(414, 2136559624);
+	IndexedFileSize = 36345;
 	Dirty = true;
 }

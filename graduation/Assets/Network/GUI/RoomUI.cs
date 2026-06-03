@@ -1,5 +1,7 @@
 using Mirror;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Steamworks;
 
@@ -28,6 +30,10 @@ public class RoomUI : MonoBehaviour
 
     [Header("Steam 功能")]
     public Button inviteFriendButton;
+
+    [Header("Scene Navigation")]
+    [SerializeField] private string fallbackStartSceneName = "startScene";
+    [SerializeField, Min(0f)] private float returnSceneLoadDelay = 0.1f;
 
     #endregion
 
@@ -136,7 +142,75 @@ public class RoomUI : MonoBehaviour
 
     private void OnLeaveClicked()
     {
-        networkmanager.instance.GetCurrentProvider()?.LeaveLobby();
+        ReturnToStartScene();
+    }
+
+    /// <summary>Leaves the current room and returns to the configured start/offline scene.</summary>
+    public void ReturnToStartScene()
+    {
+        if (networkmanager.instance == null)
+        {
+            Debug.LogWarning("[RoomUI] Cannot return to start scene because NetworkManager is missing.");
+            return;
+        }
+
+        ILobbyProvider provider = networkmanager.instance.GetCurrentProvider();
+        if (provider != null)
+        {
+            provider.LeaveLobby();
+            StartCoroutine(LoadStartSceneAfterNetworkStops());
+            return;
+        }
+
+        if (NetworkServer.active && NetworkClient.active)
+        {
+            networkmanager.instance.StopHost();
+            StartCoroutine(LoadStartSceneAfterNetworkStops());
+            return;
+        }
+
+        if (NetworkClient.active)
+        {
+            networkmanager.instance.StopClient();
+            StartCoroutine(LoadStartSceneAfterNetworkStops());
+            return;
+        }
+
+        if (NetworkServer.active)
+        {
+            networkmanager.instance.StopServer();
+            StartCoroutine(LoadStartSceneAfterNetworkStops());
+            return;
+        }
+
+        LoadConfiguredStartScene();
+    }
+
+    private IEnumerator LoadStartSceneAfterNetworkStops()
+    {
+        if (returnSceneLoadDelay > 0f)
+            yield return new WaitForSeconds(returnSceneLoadDelay);
+
+        LoadConfiguredStartScene();
+    }
+
+    private void LoadConfiguredStartScene()
+    {
+        string sceneName = fallbackStartSceneName;
+
+        if (networkmanager.instance != null && !string.IsNullOrEmpty(networkmanager.instance.offlineScene))
+            sceneName = networkmanager.instance.offlineScene;
+
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            Debug.LogWarning("[RoomUI] Cannot return to start scene because no fallback or offline scene is configured.");
+            return;
+        }
+
+        if (SceneManager.GetActiveScene().name == sceneName)
+            return;
+
+        SceneManager.LoadScene(sceneName);
     }
 
     private void OnInviteFriendClicked()

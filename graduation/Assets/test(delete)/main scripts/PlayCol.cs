@@ -401,10 +401,6 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
             return;
         }
 
-        int maxHpDelta = maxHp - previousMaxHp;
-        if (maxHpDelta > 0 && _hp > 0)
-            _hp += maxHpDelta;
-
         _hp = Mathf.Clamp(_hp, 0, maxHp);
     }
 

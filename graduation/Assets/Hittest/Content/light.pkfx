@@ -222,7 +222,7 @@ CParticleNodePinIn	$4703F6C7
 	Visible = false;
 	Owner = "$1838F4AE";
 	BaseType = float3;
-	ValueF = float4(0.0000000e+00, -9.8100004e+00, 0.0000000e+00, 0.0000000e+00);
+	ValueF = float4(0.0000000e+00, 3.0000000e+00, 0.0000000e+00, 0.0000000e+00);
 }
 CParticleNodePinOut	$F20FBF14
 {
@@ -1741,7 +1741,7 @@ CParticleNodePinIn	$CA82C414
 	Visible = false;
 	Owner = "$8F7A985A";
 	BaseType = dataImage;
-	ValueD = "Library/PopcornFXCore/Materials/DefaultTextures/Diffuse.dds";
+	ValueD = "Textures/Alpha0.png";
 }
 CParticleNodePinIn	$8F323B78
 {

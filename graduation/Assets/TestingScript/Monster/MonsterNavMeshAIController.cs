@@ -1,4 +1,5 @@
 using Mirror;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -19,6 +20,10 @@ public class MonsterNavMeshAIController : NetworkBehaviour
     #endregion
 
     #region Runtime
+
+    private static readonly List<Transform> CachedPlayerTargets = new List<Transform>();
+    private static float nextPlayerCacheRefreshTime;
+    private const float PlayerCacheRefreshInterval = 1f;
 
     private Transform currentTarget;
     private Vector3 spawnPosition;
@@ -84,14 +89,17 @@ public class MonsterNavMeshAIController : NetworkBehaviour
 
     private void UpdateTarget()
     {
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        RefreshPlayerTargetCacheIfNeeded();
 
         Transform nearestPlayer = null;
         float nearestSqrDistance = detectRange * detectRange;
 
-        for (int i = 0; i < players.Length; i++)
+        for (int i = 0; i < CachedPlayerTargets.Count; i++)
         {
-            Transform playerTransform = players[i].transform;
+            Transform playerTransform = CachedPlayerTargets[i];
+            if (playerTransform == null)
+                continue;
+
             float sqrDistance = (playerTransform.position - transform.position).sqrMagnitude;
 
             if (sqrDistance > nearestSqrDistance)
@@ -110,6 +118,36 @@ public class MonsterNavMeshAIController : NetworkBehaviour
 
         currentTarget = nearestPlayer;
         UpdateUnreachableTimer();
+    }
+
+    private static void RefreshPlayerTargetCacheIfNeeded()
+    {
+        if (Time.time < nextPlayerCacheRefreshTime)
+            return;
+
+        nextPlayerCacheRefreshTime = Time.time + PlayerCacheRefreshInterval;
+        CachedPlayerTargets.Clear();
+
+        if (NetworkServer.active)
+        {
+            foreach (NetworkConnectionToClient connection in NetworkServer.connections.Values)
+            {
+                if (connection == null || connection.identity == null)
+                    continue;
+
+                CachedPlayerTargets.Add(connection.identity.transform);
+            }
+        }
+
+        if (CachedPlayerTargets.Count > 0)
+            return;
+
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (players[i] != null)
+                CachedPlayerTargets.Add(players[i].transform);
+        }
     }
 
     private void UpdateMovement()

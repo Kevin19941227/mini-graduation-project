@@ -341,12 +341,6 @@ public class MonsterAI : NetworkBehaviour
             }
         }
 
-        if (nearest != null) return nearest;
-
-        PlayCol[] players = FindObjectsOfType<PlayCol>();
-        for (int i = 0; i < players.Length; i++)
-            CheckNearestPlayer(players[i].transform, ref nearest, ref nearestSqrDistance);
-
         return nearest;
     }
 

@@ -284,7 +284,7 @@ CEditorAssetEntryMesh	$DBE780E4
 	Filename = "PingPong.fbx";
 	InternalIndexedLastModifiedTime = uint2(414, 2136557506);
 	IndexedFileSize = 21292;
-	InternalLastDetailedAnalysisTime = uint2(414, 2056916413);
+	InternalLastDetailedAnalysisTime = uint2(414, -1946801738);
 	AnimTrackCountData = 1;
 	AnimLengthData = 3.3666666e+00;
 }
@@ -28215,7 +28215,7 @@ CEditorAssetEntryTexture	$CF6961B3
 CEditorAssetEntryDir	$4C02D122
 {
 	Filename = "Content";
-	InternalIndexedLastModifiedTime = uint2(414, 2136557369);
+	InternalIndexedLastModifiedTime = uint2(414, -1946305604);
 	Assets = {
 		"$06C5558D",
 		"$E3891330",
@@ -28353,7 +28353,7 @@ CEditorAssetEntryDir	$1373FB79
 CEditorAssetEntryEffect	$E3891330
 {
 	Filename = "light.pkfx";
-	InternalIndexedLastModifiedTime = uint2(414, 2136557362);
+	InternalIndexedLastModifiedTime = uint2(414, -1946305604);
 	AssetDependencies = {
 		"Library/PopcornFXCore/Materials/Billboard_Transparent.pkma",
 		"Library/PopcornFXCore/Templates/Dynamics.pkfx",
@@ -28361,11 +28361,16 @@ CEditorAssetEntryEffect	$E3891330
 		"Library/PopcornFXCore/Templates/Core.pkfx",
 		"Library/PopcornFXCore/Templates/Color.pkfx",
 		"Library/PopcornFXCore/Templates/Utils.pkfx",
-		"Library/PopcornFXCore/Materials/DefaultTextures/Diffuse.dds",
+		"Textures/Alpha0.png",
 	};
-	IndexedFileSize = 33046;
-	Dirty = true;
+	IndexedFileSize = 31249;
+	InternalLastDetailedAnalysisTime = uint2(414, -1946304847);
 	IndexedFileVersion = "2.20.13.26695";
+	LayersData = 3;
+	NodeGraphCountData = 1;
+	InstructionCountData = 153;
+	LanguagesData = "eng";
+	NodeStatsCountData = 2;
 }
 CEditorAssetEntryEffect	$707E99B3
 {
@@ -28394,12 +28399,19 @@ CEditorTemplateEntry	$B2EE90F2
 	CustomName = "SparkPhysics";
 	EmitDeprecationWarning = true;
 	ObjectUID = 550393175;
+	OutputTypes = {
+		"$BF900492",
+		"$772AFD31",
+	};
 }
 CEditorTemplateEntry	$7BC9299D
 {
 	CustomName = "Sparllife";
 	EmitDeprecationWarning = true;
 	ObjectUID = 1423306343;
+	OutputTypes = {
+		"$12902245",
+	};
 }
 CEditorTemplateEntry	$F2A50A24
 {
@@ -28407,6 +28419,9 @@ CEditorTemplateEntry	$F2A50A24
 	ClassType = Sampler;
 	EmitDeprecationWarning = true;
 	ObjectUID = 1831642001;
+	OutputTypes = {
+		"$8B14E5E7",
+	};
 }
 CEditorAssetEntryTexture	$69A1A1B7
 {
@@ -28456,4 +28471,27 @@ CEditorAssetEntryTexture	$BE4E7025
 	InternalIndexedLastModifiedTime = uint2(414, 2136559624);
 	IndexedFileSize = 36345;
 	Dirty = true;
+}
+CEditorTemplatePinEntry	$BF900492
+{
+	ObjectUID = -760430328;
+	PinName = "Position";
+	DataType = 11;
+}
+CEditorTemplatePinEntry	$772AFD31
+{
+	ObjectUID = 1967978558;
+	PinName = "Velocity";
+	DataType = 11;
+}
+CEditorTemplatePinEntry	$12902245
+{
+	ObjectUID = -1401030802;
+	PinName = "Life";
+}
+CEditorTemplatePinEntry	$8B14E5E7
+{
+	ObjectUID = 1023498576;
+	PinName = "DiffuseColor";
+	DataType = 9;
 }

@@ -70,6 +70,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     [Header("跳躍設定")]
     public float jumpForce = 15f;
+    [SerializeField] private float jumpCooldown = 1f;
 
     [Header("重力設定")]
     public float gravity = -30f;
@@ -178,6 +179,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     private bool _wasJumpRequested = false;
     private float _jumpStartTime = -1f;
+    private float _nextJumpTime = 0f;
     private const float MIN_JUMP_AIRTIME = 0.15f;
     private bool _gameplayInputEnabled = true;
     private bool _hasReportedDeathToMatch;
@@ -1286,11 +1288,13 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (!_gameplayInputEnabled) return;
 
         if (value.isPressed && _currentPose == PlayerPose.Grounded
-            && _motor.GroundingStatus.IsStableOnGround && _canChangeState)
+            && _motor.GroundingStatus.IsStableOnGround && _canChangeState
+            && Time.time >= _nextJumpTime)
         {
             if (_isCharging) _isCharging = false;
             _jumpRequested = true;
             _wasJumpRequested = true;
+            _nextJumpTime = Time.time + jumpCooldown;
             ChangeState(PlayerPose.Jump);
         }
     }

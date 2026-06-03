@@ -1726,7 +1726,7 @@ PrefabInstance:
     - target: {fileID: 1299443421828762120, guid: 3e0b8649e9c4a5c419aebea8977f8b53,
         type: 3}
       propertyPath: finalRadius
-      value: 30
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 1299443421828762120, guid: 3e0b8649e9c4a5c419aebea8977f8b53,
         type: 3}
@@ -2607,6 +2607,7 @@ MonoBehaviour:
   directionLineLength: 120
   zoneLineColor: {r: 0, g: 1, b: 1, a: 1}
   outsideZoneDirectionColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  renderEveryNFrames: 4
 --- !u!1 &2084961679
 GameObject:
   m_ObjectHideFlags: 0

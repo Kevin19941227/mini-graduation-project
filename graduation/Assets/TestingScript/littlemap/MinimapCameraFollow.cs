@@ -487,6 +487,7 @@ public class MinimapCameraFollow : MonoBehaviour
         mesh.vertices = vertices;
         mesh.triangles = triangles;
         mesh.RecalculateBounds();
+        mesh.UploadMeshData(true);
         return mesh;
     }
 

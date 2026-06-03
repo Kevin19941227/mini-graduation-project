@@ -574,7 +574,7 @@ MonoBehaviour:
   monsterData: {fileID: 0}
   gameDatabase: {fileID: 11400000, guid: f0beb0221959dcb4d8924938c34e9826, type: 2}
   dropTableOverride: {fileID: 11400000, guid: df5f6476b4179bf4886ec772d10324bc, type: 2}
-  attackDistance: 3.65
+  attackDistance: 3
   findPlayerInterval: 1
   speedSyncInterval: 0.1
   attackDamage: 10

@@ -478,6 +478,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 991968b684f677a48956a00aac370cc0,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 991968b684f677a48956a00aac370cc0,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 991968b684f677a48956a00aac370cc0,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 991968b684f677a48956a00aac370cc0,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -1094,6 +1109,7 @@ MonoBehaviour:
   dashTapThreshold: 0.2
   attackRadius: 1.5
   attackRange: 1.2
+  attackBoxHeight: 2
   attackDamage: 10
   maxHp: 100
   attackHitMask:
@@ -1107,12 +1123,66 @@ MonoBehaviour:
   cameraShakeStrength: 0.3
   hitInvincibilityDuration: 0.5
   impulseSource: {fileID: -6235521836210514210}
-  hitEffectPrefab: {fileID: 8021892516405230972, guid: 1c3ff2f0f67ac1b4c89cddbc755c19da,
+  hitEffectPrefab: {fileID: 467751860875805754, guid: 7c6d9bb9c8994364dbe5ba2e32dd4d13,
     type: 3}
   hitEffectLifetime: 2
   controlModeController: {fileID: 3955687603713781639}
   assemblyModeKey: 16
   equipmentStatsController: {fileID: 0}
+  inventory: {fileID: 0}
+  gameDatabase: {fileID: 0}
+  timeBlinkHalfExtent: 10
+  timeBlinkCooldown: 3
+  timeBlinkMaxPositionAttempts: 16
+  timeBlinkGroundRayHeight: 8
+  timeBlinkGroundRayDistance: 20
+  timeBlinkGroundOffset: 0.05
+  timeBlinkGroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  timeBlinkBlockMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  timeBlinkCapsuleRadius: 0.5
+  timeBlinkCapsuleHeight: 2
+  timeBlinkCapsuleYOffset: 1
+  virusPoisonCircleBaseDiameter: 2
+  virusPoisonCircleDiameterPerExtraHead: 1
+  virusPoisonCircleSpawnInterval: 5
+  virusPoisonCircleDuration: 4
+  virusPoisonTrailTickInterval: 0.5
+  virusPoisonDuration: 3
+  virusPoisonDamage: 1
+  motionAttackRangeMultiplier: 3
+  motionBlackoutDuration: 2
+  motionAttackEffectMinInterval: 0.1
+  motionAttackEffectPositionOffset: {x: 0, y: -1, z: 0}
+  motionAttackEffectEulerOffset: {x: 0, y: -90, z: 0}
+  motionAttackFanRadius: 15
+  motionAttackFanAngle: 38.2
+  motionAttackFanHeight: 2
+  motionAttackFanForwardOffset: 0.5
+  virusTrailEffectRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  timeBlinkEffectRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  motionAttackEffectRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  blackoutRequested:
+    m_PersistentCalls:
+      m_Calls: []
+  virusTrailEffectPrefab: {fileID: 6211125795773073634, guid: 12a56ee4630040c4eb17ae9707ed4cef,
+    type: 3}
+  timeBlinkEffectPrefab: {fileID: 2994049833057877985, guid: bdafa105848a31d4b8915a64b96d5c98,
+    type: 3}
+  motionAttackEffectPrefab: {fileID: 6013317033843827723, guid: 645ebd7cef59b7b40b27c29bf3e99cf2,
+    type: 3}
+  specialEffectLifetime: 3
+  attackRangeDebugLineWidth: 0.06
+  attackRangeDebugHeightOffset: 0.05
 --- !u!114 &4812828581880068273
 MonoBehaviour:
   m_ObjectHideFlags: 0

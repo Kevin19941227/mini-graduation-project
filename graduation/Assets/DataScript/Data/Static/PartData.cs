@@ -18,6 +18,14 @@ public enum RarityType
     Legendary
 }
 
+public enum PartSpecialEffect
+{
+    None,
+    VirusHeadPoisonTrail,
+    TimeHeadBlink,
+    MotionHeadWideAttack
+}
+
 [CreateAssetMenu(fileName = "PartData", menuName = "GameData/Part Data")]
 public class PartData : ScriptableObject
 {
@@ -39,6 +47,11 @@ public class PartData : ScriptableObject
 
     [Header("Passive Effects")]
     public List<BuffData> passiveBuffs = new List<BuffData>();
+
+    [Header("Special Runtime Effects")]
+    public PartSpecialEffect specialEffect = PartSpecialEffect.None;
+    public float jumpHeightMultiplier = 1f;
+    public float attackRangeMultiplier = 1f;
 
     [Header("Presentation")]
     public Sprite icon;

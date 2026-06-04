@@ -6,9 +6,34 @@ using KinematicCharacterController;
 using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Events;
+
+[System.Serializable]
+public class PlayColSpecialEffectEvent : UnityEvent<PlayCol>
+{
+}
+
+[System.Serializable]
+public class PlayColPositionEffectEvent : UnityEvent<Vector3>
+{
+}
+
+[System.Serializable]
+public class PlayColDurationEffectEvent : UnityEvent<float>
+{
+}
 
 public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputModeReceiver
 {
+    #region Special Part IDs
+
+    private const int VirusHeadPartID = 101;
+    private const int TimeHeadPartID = 201;
+    private const int MotionHatPartID = 304;
+    private const int MotionAttackFanDebugSegments = 18;
+
+    #endregion
+
     public enum PlayerPose
     {
         Grounded, Jump, Fall, Charging, Attack, Hit, Die, Dash
@@ -16,6 +41,22 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public enum MoveState
     {
         Idle, Walk, Run, Stop
+    }
+
+    private struct VirusPoisonCircleRuntime
+    {
+        public Vector3 center;
+        public float radius;
+        public float endTime;
+        public float nextTickTime;
+
+        public VirusPoisonCircleRuntime(Vector3 center, float radius, float endTime, float nextTickTime)
+        {
+            this.center = center;
+            this.radius = radius;
+            this.endTime = endTime;
+            this.nextTickTime = nextTickTime;
+        }
     }
 
     [Header("UI")]
@@ -89,6 +130,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     [Header("戰鬥設定")]
     public float attackRadius = 1.5f;
     public float attackRange = 1.2f;
+    [SerializeField] private float attackBoxHeight = 2f;
     public int attackDamage = 10;
     public int maxHp = 100;
     [SerializeField] private LayerMask attackHitMask = Physics.AllLayers;
@@ -115,6 +157,53 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
     [Header("Equipment Stats")]
     [SerializeField] private PlayerEquipmentStatsController equipmentStatsController;
+
+    [Header("Special Equipment Effects")]
+    [SerializeField] private PlayerInventoryNetwork inventory;
+    [SerializeField] private GameDatabase gameDatabase;
+    [SerializeField] private float timeBlinkHalfExtent = 5f;
+    [SerializeField] private float timeBlinkCooldown = 3f;
+    [SerializeField] private int timeBlinkMaxPositionAttempts = 16;
+    [SerializeField] private float timeBlinkGroundRayHeight = 8f;
+    [SerializeField] private float timeBlinkGroundRayDistance = 20f;
+    [SerializeField] private float timeBlinkGroundOffset = 0.05f;
+    [SerializeField] private LayerMask timeBlinkGroundMask = Physics.AllLayers;
+    [SerializeField] private LayerMask timeBlinkBlockMask = Physics.AllLayers;
+    [SerializeField] private float timeBlinkCapsuleRadius = 0.5f;
+    [SerializeField] private float timeBlinkCapsuleHeight = 2f;
+    [SerializeField] private float timeBlinkCapsuleYOffset = 1f;
+    [SerializeField] private float virusPoisonCircleBaseDiameter = 2f;
+    [SerializeField] private float virusPoisonCircleDiameterPerExtraHead = 1f;
+    [SerializeField] private float virusPoisonCircleSpawnInterval = 5f;
+    [SerializeField] private float virusPoisonCircleDuration = 4f;
+    [SerializeField] private float virusPoisonCircleHeight = 2f;
+    [SerializeField] private LayerMask virusPoisonHitMask = Physics.AllLayers;
+    [SerializeField] private float virusPoisonTrailTickInterval = 0.5f;
+    [SerializeField] private float virusPoisonDuration = 3f;
+    [SerializeField] private int virusPoisonDamage = 1;
+    [SerializeField] private float motionAttackRangeMultiplier = 3f;
+    [SerializeField] private float motionBlackoutDuration = 2f;
+    [SerializeField] private float motionAttackEffectMinInterval = 0.1f;
+    [SerializeField] private Vector3 motionAttackEffectPositionOffset = new Vector3(0f, -1f, 0f);
+    [SerializeField] private Vector3 motionAttackEffectEulerOffset = new Vector3(0f, -90f, 0f);
+    [SerializeField] private float motionAttackFanRadius = 6f;
+    [SerializeField, Range(1f, 180f)] private float motionAttackFanAngle = 75f;
+    [SerializeField] private float motionAttackFanHeight = 2f;
+    [SerializeField] private float motionAttackFanForwardOffset = 0.5f;
+    [SerializeField] private PlayColSpecialEffectEvent virusTrailEffectRequested;
+    [SerializeField] private PlayColPositionEffectEvent timeBlinkEffectRequested;
+    [SerializeField] private PlayColSpecialEffectEvent motionAttackEffectRequested;
+    [SerializeField] private PlayColDurationEffectEvent blackoutRequested;
+
+    [Header("Special Effect Prefabs")]
+    [SerializeField] private ParticleSystem virusTrailEffectPrefab;
+    [SerializeField] private ParticleSystem timeBlinkEffectPrefab;
+    [SerializeField] private ParticleSystem motionAttackEffectPrefab;
+    [SerializeField, Min(0f)] private float specialEffectLifetime = 3f;
+
+    [Header("Debug Visualizers")]
+    [SerializeField] private float attackRangeDebugLineWidth = 0.06f;
+    [SerializeField] private float attackRangeDebugHeightOffset = 0.05f;
 
     [SyncVar(hook = nameof(OnHpChanged))]
     private int _hp = 100;
@@ -150,6 +239,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private Vector3 _dashDirection = Vector3.zero;
     private float _dashTimer = 0f;
     private bool _attackFired = false;
+    private int _localAttackSequence;
+    private int _activeLocalAttackSequence;
     private readonly HashSet<int> _attackHitTargetIds = new HashSet<int>();
 
     private float _shiftPressTime = -1f;
@@ -188,6 +279,25 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     private const float MAX_STOP_ANIM_DURATION = 1.2f;
     private float _serverStationaryTimer;
     private float _serverRegenTimer;
+    private bool _isSubscribedToInventory;
+    private float _equippedJumpForceMultiplier = 1f;
+    private float _equippedAttackRangeMultiplier = 1f;
+    private float _nextLocalTimeBlinkTime;
+    private float _nextServerTimeBlinkTime;
+    private float _nextServerVirusTrailTickTime;
+    private float _poisonEndTime;
+    private float _nextPoisonDamageTime;
+    private float _localBlackoutEndTime;
+    private float _lastServerMotionAttackEffectTime = -999f;
+    private int _lastServerMotionAttackEffectSequence = -1;
+    private int _equippedVirusHeadCount;
+    private bool _hasVirusHeadPoisonTrail;
+    private bool _hasTimeHeadBlink;
+    private bool _hasMotionHeadWideAttack;
+    private bool _showAttackRangeDebug;
+    private Color _attackRangeDebugColor = Color.red;
+    private LineRenderer _attackRangeDebugRenderer;
+    private readonly List<VirusPoisonCircleRuntime> _activeVirusPoisonCircles = new List<VirusPoisonCircleRuntime>();
 
     public bool IsDead => _hp <= 0 || _currentPose == PlayerPose.Die;
     public int CurrentHp => _hp;
@@ -203,6 +313,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         _animator = GetComponent<Animator>();
         controlModeController = GetComponent<PlayerControlModeController>();
         equipmentStatsController = GetComponent<PlayerEquipmentStatsController>();
+        CacheSpecialEffectReferences();
         _runSpeedMultiplier = walkSpeed > 0f ? runSpeed / walkSpeed : FALLBACK_RUN_SPEED_MULTIPLIER;
         _motor.CharacterController = this;
         ConfigureNetworkSyncComponents();
@@ -250,6 +361,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         _playerInput = GetComponent<PlayerInput>();
         SubscribeEquipmentStats();
+        RecalculateEquippedSpecialEffects();
 
         if (_worldHealthBar != null)
             _worldHealthBar.Init(transform);
@@ -272,18 +384,35 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     public override void OnStartServer()
     {
         base.OnStartServer();
+        SubscribeSpecialEffectInventory();
+        RecalculateEquippedSpecialEffects();
         SurvivalMatchController.EnsureServerInstance()?.ServerRegisterPlayer(this);
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        SubscribeSpecialEffectInventory();
+        RecalculateEquippedSpecialEffects();
     }
 
     public override void OnStopServer()
     {
+        UnsubscribeSpecialEffectInventory();
         SurvivalMatchController.GetServerInstance()?.ServerUnregisterPlayer(this);
         base.OnStopServer();
+    }
+
+    public override void OnStopClient()
+    {
+        UnsubscribeSpecialEffectInventory();
+        base.OnStopClient();
     }
 
     private void OnDestroy()
     {
         UnsubscribeEquipmentStats();
+        UnsubscribeSpecialEffectInventory();
     }
 
     private void InitializeLocalHud()
@@ -430,6 +559,8 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
     {
         UpdateServerDeathWatch();
         UpdateServerPassiveRegen();
+        ServerUpdatePoisonState();
+        ServerUpdateVirusPoisonTrail();
 
         if (!isLocalPlayer) return;
 
@@ -447,6 +578,22 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         UpdateAnimation();
         UpdateLocalHudCharge();
         SyncAnimationToServer();
+    }
+
+    private void LateUpdate()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        UpdateAttackRangeDebugVisualizer();
+    }
+
+    private void OnGUI()
+    {
+        if (!isLocalPlayer || Time.time >= _localBlackoutEndTime)
+            return;
+
+        GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.blackTexture);
     }
 
     [ServerCallback]
@@ -579,7 +726,10 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 && _currentPose == PlayerPose.Grounded
                 && !_isDashing)
             {
-                StartDash();
+                if (_hasTimeHeadBlink)
+                    TryRequestTimeBlink();
+                else
+                    StartDash();
             }
             _shiftPressTime = -1f;
         }
@@ -597,14 +747,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
                 _audioSource.Stop();
                 _audioSource.volume = 1f;
             }
-            _isCharging = false;
-            _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
-            _dashDirection = _moveDirection != Vector3.zero
-                ? _moveDirection.normalized
-                : transform.forward;
-            _dashTimer = dashDuration;
-            _attackFired = false;
-            ChangeState(PlayerPose.Attack);
+            ReleaseChargedAttack();
         }
     }
 
@@ -1055,6 +1198,26 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         }
     }
 
+    /// <summary>
+    /// Shows or hides the local attack range debug circle with the given color.
+    /// </summary>
+    public void SetAttackRangeDebugVisible(bool visible, Color color)
+    {
+        _showAttackRangeDebug = visible;
+        _attackRangeDebugColor = color;
+
+        if (!_showAttackRangeDebug && _attackRangeDebugRenderer != null)
+            _attackRangeDebugRenderer.enabled = false;
+    }
+
+    /// <summary>
+    /// Returns whether the local attack range debug circle is currently visible.
+    /// </summary>
+    public bool IsAttackRangeDebugVisible()
+    {
+        return _showAttackRangeDebug;
+    }
+
     private string GetDashAnimName()
     {
         Vector3 localDir = transform.InverseTransformDirection(_dashDirection);
@@ -1081,12 +1244,45 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (!isLocalPlayer) return;
         if (!_gameplayInputEnabled) return;
         if (!NetworkClient.active || !NetworkClient.ready) return;
+        TriggerLocalAttack();
+    }
+
+    private void TriggerLocalAttack()
+    {
         if (_attackFired) return;
         _attackFired = true;
 
         impulseSource?.GenerateImpulse(cameraShakeStrength);
         StartCoroutine(HitStop(hitStopDuration));
-        CmdDoAttack(transform.forward);
+
+        if (NetworkClient.active && NetworkClient.ready)
+            CmdDoAttack(transform.forward, _activeLocalAttackSequence);
+    }
+
+    private void ReleaseChargedAttack()
+    {
+        if (!_isCharging)
+            return;
+
+        if (_audioSource != null)
+        {
+            _audioSource.loop = false;
+            _audioSource.Stop();
+            _audioSource.volume = 1f;
+        }
+
+        _isCharging = false;
+        _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
+        _dashDirection = _moveDirection != Vector3.zero
+            ? _moveDirection.normalized
+            : transform.forward;
+        _dashTimer = _hasMotionHeadWideAttack ? 0f : dashDuration;
+        _attackFired = false;
+        _activeLocalAttackSequence = ++_localAttackSequence;
+        ChangeState(PlayerPose.Attack);
+
+        if (_hasMotionHeadWideAttack)
+            TriggerLocalAttack();
     }
 
     private IEnumerator HitStop(float duration)
@@ -1096,34 +1292,192 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         Time.timeScale = 1f;
     }
 
-    [Command]
-    private void CmdDoAttack(Vector3 attackerForward)
+    private void TryRequestTimeBlink()
     {
-        Vector3 hitPoint = transform.position + attackerForward * attackRange;
-        Collider[] hits = Physics.OverlapSphere(hitPoint, attackRadius, attackHitMask, QueryTriggerInteraction.Collide);
+        if (!_hasTimeHeadBlink || Time.time < _nextLocalTimeBlinkTime)
+            return;
 
+        _nextLocalTimeBlinkTime = Time.time + timeBlinkCooldown;
+        CmdRequestTimeBlink();
+    }
+
+    [Command]
+    private void CmdRequestTimeBlink()
+    {
+        if (_hp <= 0 || !_hasTimeHeadBlink || Time.time < _nextServerTimeBlinkTime)
+            return;
+
+        _nextServerTimeBlinkTime = Time.time + timeBlinkCooldown;
+        Vector3 destination = ResolveTimeBlinkDestination();
+        ServerSetBlinkPosition(destination);
+
+        if (connectionToClient != null)
+            TargetApplyTimeBlink(connectionToClient, destination);
+
+        RpcPlayTimeBlinkEffect(destination);
+    }
+
+    [Server]
+    private Vector3 ResolveTimeBlinkDestination()
+    {
+        Vector3 forward = GetFlattenedAttackForward(transform.forward);
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+
+        for (int i = 0; i < timeBlinkMaxPositionAttempts; i++)
+        {
+            float sideOffset = UnityEngine.Random.Range(-timeBlinkHalfExtent, timeBlinkHalfExtent);
+            float forwardOffset = UnityEngine.Random.Range(0f, timeBlinkHalfExtent);
+            Vector3 candidate = transform.position + right * sideOffset + forward * forwardOffset;
+
+            if (TryResolveGroundedBlinkDestination(candidate, out Vector3 groundedDestination))
+                return groundedDestination;
+        }
+
+        return transform.position;
+    }
+
+    private bool TryResolveGroundedBlinkDestination(Vector3 candidate, out Vector3 destination)
+    {
+        Vector3 rayOrigin = candidate + Vector3.up * timeBlinkGroundRayHeight;
+
+        if (!Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit groundHit, timeBlinkGroundRayDistance, timeBlinkGroundMask, QueryTriggerInteraction.Ignore))
+        {
+            destination = transform.position;
+            return false;
+        }
+
+        destination = groundHit.point + Vector3.up * timeBlinkGroundOffset;
+        return IsBlinkCapsuleClear(destination);
+    }
+
+    private bool IsBlinkCapsuleClear(Vector3 destination)
+    {
+        float radius = Mathf.Max(0f, timeBlinkCapsuleRadius);
+        float height = Mathf.Max(radius * 2f, timeBlinkCapsuleHeight);
+        float yOffset = timeBlinkCapsuleYOffset;
+        float clampedHalfSegment = Mathf.Max(0f, height * 0.5f - radius);
+        Vector3 capsuleCenter = destination + Vector3.up * yOffset;
+        Vector3 capsuleBottom = capsuleCenter + Vector3.down * clampedHalfSegment;
+        Vector3 capsuleTop = capsuleCenter + Vector3.up * clampedHalfSegment;
+        Collider[] overlaps = Physics.OverlapCapsule(capsuleBottom, capsuleTop, radius, timeBlinkBlockMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < overlaps.Length; i++)
+        {
+            Collider overlap = overlaps[i];
+
+            if (overlap == null || overlap.transform.IsChildOf(transform))
+                continue;
+
+            return false;
+        }
+
+        return true;
+    }
+
+    [Server]
+    private void ServerSetBlinkPosition(Vector3 destination)
+    {
+        transform.position = destination;
+
+        if (_motor != null && _motor.enabled)
+            _motor.SetPosition(destination);
+    }
+
+    [TargetRpc]
+    private void TargetApplyTimeBlink(NetworkConnectionToClient targetConnection, Vector3 destination)
+    {
+        transform.position = destination;
+
+        if (_motor != null)
+            _motor.SetPosition(destination);
+    }
+
+    [ClientRpc]
+    private void RpcPlayTimeBlinkEffect(Vector3 destination)
+    {
+        PlaySpecialEffect(timeBlinkEffectPrefab, destination, Quaternion.identity);
+        timeBlinkEffectRequested?.Invoke(destination);
+    }
+
+    [Command]
+    private void CmdDoAttack(Vector3 attackerForward, int attackSequence)
+    {
         _attackHitTargetIds.Clear();
+
+        if (_hasMotionHeadWideAttack)
+            ServerApplyMotionFanAttack(attackerForward);
+        else
+            ServerApplyBoxAttack(attackerForward);
+
+        if (_hasMotionHeadWideAttack
+            && attackSequence != _lastServerMotionAttackEffectSequence
+            && Time.time >= _lastServerMotionAttackEffectTime + motionAttackEffectMinInterval)
+        {
+            _lastServerMotionAttackEffectTime = Time.time;
+            _lastServerMotionAttackEffectSequence = attackSequence;
+            RpcPlayMotionAttackEffect(attackerForward);
+        }
+    }
+
+    [Server]
+    private void ServerApplyBoxAttack(Vector3 attackerForward)
+    {
+        Quaternion attackRotation = GetAttackBoxRotation(attackerForward);
+        Vector3 hitPoint = GetAttackBoxCenter(attackerForward);
+        Collider[] hits = Physics.OverlapBox(hitPoint, GetCurrentAttackBoxHalfExtents(), attackRotation, attackHitMask, QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            TryApplyAttackHit(hits[i], attackerForward, false);
+        }
+    }
+
+    [Server]
+    private void ServerApplyMotionFanAttack(Vector3 attackerForward)
+    {
+        Vector3 origin = GetMotionAttackFanOrigin(attackerForward);
+        float radius = Mathf.Max(0f, motionAttackFanRadius);
+        Collider[] hits = Physics.OverlapSphere(origin, radius, attackHitMask, QueryTriggerInteraction.Collide);
+
         for (int i = 0; i < hits.Length; i++)
         {
             Collider hit = hits[i];
-            if (hit == null || hit.gameObject == gameObject) continue;
 
-            PlayCol playerTarget = hit.GetComponentInParent<PlayCol>();
-            if (playerTarget != null)
-            {
-                if (playerTarget == this || !TryRegisterAttackTarget(playerTarget)) continue;
-                playerTarget.TakeDamage(attackDamage, attackerForward);
-                RpcPlayHitEffect(GetHitEffectPosition(hit, playerTarget.transform));
+            if (!IsInsideMotionAttackFan(hit, attackerForward, origin))
                 continue;
-            }
 
-            MonsterAI monsterTarget = hit.GetComponentInParent<MonsterAI>();
-            if (monsterTarget == null) continue;
-            if (!TryRegisterAttackTarget(monsterTarget)) continue;
-
-            monsterTarget.TakeDamage(attackDamage, attackerForward, this);
-            RpcPlayHitEffect(GetHitEffectPosition(hit, monsterTarget.transform));
+            TryApplyAttackHit(hit, attackerForward, true);
         }
+    }
+
+    [Server]
+    private bool TryApplyAttackHit(Collider hit, Vector3 attackerForward, bool applyMotionBlackout)
+    {
+        if (hit == null || hit.gameObject == gameObject)
+            return false;
+
+        PlayCol playerTarget = hit.GetComponentInParent<PlayCol>();
+        if (playerTarget != null)
+        {
+            if (playerTarget == this || !TryRegisterAttackTarget(playerTarget))
+                return false;
+
+            playerTarget.TakeDamage(attackDamage, attackerForward);
+
+            if (applyMotionBlackout && playerTarget.connectionToClient != null)
+                playerTarget.TargetRequestBlackout(playerTarget.connectionToClient, motionBlackoutDuration);
+
+            RpcPlayHitEffect(GetHitEffectPosition(hit, playerTarget.transform));
+            return true;
+        }
+
+        MonsterAI monsterTarget = hit.GetComponentInParent<MonsterAI>();
+        if (monsterTarget == null || !TryRegisterAttackTarget(monsterTarget))
+            return false;
+
+        monsterTarget.TakeDamage(attackDamage, attackerForward, this);
+        RpcPlayHitEffect(GetHitEffectPosition(hit, monsterTarget.transform));
+        return true;
     }
 
     private bool TryRegisterAttackTarget(Component target)
@@ -1143,7 +1497,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         if (targetTransform != null)
             return targetTransform.position + Vector3.up;
 
-        return transform.position + transform.forward * attackRange;
+        return GetAttackBoxCenter(transform.forward);
     }
 
     [ClientRpc]
@@ -1154,6 +1508,457 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         GameObject effect = Instantiate(hitEffectPrefab, position, Quaternion.identity);
         if (hitEffectLifetime > 0f)
             Destroy(effect, hitEffectLifetime);
+    }
+
+    [ClientRpc]
+    private void RpcPlayMotionAttackEffect(Vector3 attackerForward)
+    {
+        PlaySpecialEffect(motionAttackEffectPrefab, GetMotionAttackEffectPosition(attackerForward), GetMotionAttackEffectRotation(attackerForward));
+    }
+
+    [TargetRpc]
+    private void TargetRequestBlackout(NetworkConnectionToClient targetConnection, float duration)
+    {
+        _localBlackoutEndTime = Time.time + Mathf.Max(0f, duration);
+        blackoutRequested?.Invoke(duration);
+    }
+
+    private void ServerUpdateVirusPoisonTrail()
+    {
+        if (!isServer)
+            return;
+
+        ServerUpdateVirusPoisonCircles();
+
+        if (_hp <= 0 || !_hasVirusHeadPoisonTrail || Time.time < _nextServerVirusTrailTickTime)
+            return;
+
+        _nextServerVirusTrailTickTime = Time.time + virusPoisonCircleSpawnInterval;
+        ServerSpawnVirusPoisonCircle();
+    }
+
+    [Server]
+    private void ServerSpawnVirusPoisonCircle()
+    {
+        float radius = GetCurrentVirusPoisonCircleRadius();
+        VirusPoisonCircleRuntime poisonCircle = new VirusPoisonCircleRuntime(
+            transform.position,
+            radius,
+            Time.time + virusPoisonCircleDuration,
+            Time.time
+        );
+
+        _activeVirusPoisonCircles.Add(poisonCircle);
+        RpcPlayVirusTrailEffect(poisonCircle.center, radius * 2f, virusPoisonCircleDuration);
+    }
+
+    [Server]
+    private void ServerUpdateVirusPoisonCircles()
+    {
+        for (int i = _activeVirusPoisonCircles.Count - 1; i >= 0; i--)
+        {
+            VirusPoisonCircleRuntime poisonCircle = _activeVirusPoisonCircles[i];
+
+            if (Time.time >= poisonCircle.endTime)
+            {
+                _activeVirusPoisonCircles.RemoveAt(i);
+                continue;
+            }
+
+            if (Time.time < poisonCircle.nextTickTime)
+                continue;
+
+            poisonCircle.nextTickTime = Time.time + virusPoisonTrailTickInterval;
+            _activeVirusPoisonCircles[i] = poisonCircle;
+            ServerApplyVirusPoisonCircle(poisonCircle);
+        }
+    }
+
+    [Server]
+    private void ServerApplyVirusPoisonCircle(VirusPoisonCircleRuntime poisonCircle)
+    {
+        float height = Mathf.Max(0.01f, virusPoisonCircleHeight);
+        Vector3 capsuleBottom = poisonCircle.center;
+        Vector3 capsuleTop = poisonCircle.center + Vector3.up * height;
+        Collider[] hits = Physics.OverlapCapsule(capsuleBottom, capsuleTop, poisonCircle.radius, virusPoisonHitMask, QueryTriggerInteraction.Collide);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            PlayCol target = hits[i] != null ? hits[i].GetComponentInParent<PlayCol>() : null;
+
+            if (target == null || target == this)
+                continue;
+
+            target.ServerApplyPoison(virusPoisonDuration);
+        }
+    }
+
+    [ClientRpc]
+    private void RpcPlayVirusTrailEffect(Vector3 center, float diameter, float duration)
+    {
+        float visualScale = Mathf.Approximately(virusPoisonCircleBaseDiameter, 0f)
+            ? 1f
+            : diameter / virusPoisonCircleBaseDiameter;
+        PlaySpecialEffect(virusTrailEffectPrefab, center, Quaternion.identity, visualScale, duration);
+        virusTrailEffectRequested?.Invoke(this);
+    }
+
+    private void PlaySpecialEffect(ParticleSystem effectPrefab, Vector3 position, Quaternion rotation)
+    {
+        PlaySpecialEffect(effectPrefab, position, rotation, 1f, specialEffectLifetime);
+    }
+
+    private void PlaySpecialEffect(ParticleSystem effectPrefab, Vector3 position, Quaternion rotation, float uniformScale, float lifetime)
+    {
+        if (effectPrefab == null)
+            return;
+
+        ParticleSystem effectInstance;
+        Vector3 effectScale = Vector3.one * Mathf.Max(0.01f, uniformScale);
+
+        if (effectPrefab.gameObject.scene.IsValid())
+        {
+            effectInstance = effectPrefab;
+            effectInstance.transform.SetPositionAndRotation(position, rotation);
+            effectInstance.transform.localScale = effectScale;
+            effectInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+        else
+        {
+            effectInstance = Instantiate(effectPrefab, position, rotation);
+            effectInstance.transform.localScale = effectScale;
+        }
+
+        effectInstance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        effectInstance.Play(true);
+
+        if (!effectPrefab.gameObject.scene.IsValid() && lifetime > 0f)
+            Destroy(effectInstance.gameObject, lifetime);
+    }
+
+    [Server]
+    private void ServerApplyPoison(float duration)
+    {
+        _poisonEndTime = Mathf.Max(_poisonEndTime, Time.time + Mathf.Max(0f, duration));
+
+        if (_nextPoisonDamageTime < Time.time)
+            _nextPoisonDamageTime = Time.time;
+    }
+
+    private void ServerUpdatePoisonState()
+    {
+        if (!isServer || Time.time >= _poisonEndTime || Time.time < _nextPoisonDamageTime)
+            return;
+
+        _nextPoisonDamageTime = Time.time + virusPoisonTrailTickInterval;
+        ServerTakePoisonDamage(virusPoisonDamage);
+    }
+
+    [Server]
+    private void ServerTakePoisonDamage(int damage)
+    {
+        if (_hp <= 0 || damage <= 0)
+            return;
+
+        _hp = Mathf.Max(0, _hp - damage);
+        ResetServerPassiveRegen();
+
+        if (_hp <= 0)
+            ServerHandleDeath();
+    }
+
+    private void CacheSpecialEffectReferences()
+    {
+        if (inventory == null)
+            inventory = GetComponent<PlayerInventoryNetwork>();
+
+        if (gameDatabase == null && inventory != null)
+            gameDatabase = inventory.AssignedGameDatabase;
+    }
+
+    private void SubscribeSpecialEffectInventory()
+    {
+        CacheSpecialEffectReferences();
+
+        if (inventory == null || _isSubscribedToInventory)
+            return;
+
+        inventory.OnInventoryChanged += RecalculateEquippedSpecialEffects;
+        _isSubscribedToInventory = true;
+    }
+
+    private void UnsubscribeSpecialEffectInventory()
+    {
+        if (inventory == null || !_isSubscribedToInventory)
+            return;
+
+        inventory.OnInventoryChanged -= RecalculateEquippedSpecialEffects;
+        _isSubscribedToInventory = false;
+    }
+
+    /// <summary>
+    /// Rebuilds runtime special effects from the currently equipped parts.
+    /// </summary>
+    public void RecalculateEquippedSpecialEffects()
+    {
+        CacheSpecialEffectReferences();
+
+        _equippedJumpForceMultiplier = 1f;
+        _equippedAttackRangeMultiplier = 1f;
+        _equippedVirusHeadCount = 0;
+        _hasVirusHeadPoisonTrail = false;
+        _hasTimeHeadBlink = false;
+        _hasMotionHeadWideAttack = false;
+
+        if (inventory != null)
+        {
+            for (int i = 0; i < inventory.EquippedParts.Count; i++)
+            {
+                ApplyEquippedPartSpecialEffect(inventory.EquippedParts[i].partID);
+            }
+        }
+    }
+
+    private void ApplyEquippedPartSpecialEffect(int partID)
+    {
+        PartData partData = gameDatabase != null ? gameDatabase.GetPartData(partID) : null;
+        PartSpecialEffect specialEffect = PartSpecialEffect.None;
+
+        if (partData != null)
+        {
+            _equippedJumpForceMultiplier *= Mathf.Max(0.01f, partData.jumpHeightMultiplier);
+            _equippedAttackRangeMultiplier *= Mathf.Max(0.01f, partData.attackRangeMultiplier);
+            specialEffect = partData.specialEffect;
+            ApplyPartSpecialEffect(specialEffect);
+        }
+
+        if (specialEffect == PartSpecialEffect.None)
+            ApplyKnownSpecialPartFallback(partID);
+    }
+
+    private void ApplyPartSpecialEffect(PartSpecialEffect specialEffect)
+    {
+        switch (specialEffect)
+        {
+            case PartSpecialEffect.VirusHeadPoisonTrail:
+                _equippedVirusHeadCount++;
+                _hasVirusHeadPoisonTrail = true;
+                break;
+
+            case PartSpecialEffect.TimeHeadBlink:
+                _hasTimeHeadBlink = true;
+                break;
+
+            case PartSpecialEffect.MotionHeadWideAttack:
+                _hasMotionHeadWideAttack = true;
+                break;
+        }
+    }
+
+    private void ApplyKnownSpecialPartFallback(int partID)
+    {
+        switch (partID)
+        {
+            case VirusHeadPartID:
+                _equippedVirusHeadCount++;
+                _hasVirusHeadPoisonTrail = true;
+                break;
+
+            case TimeHeadPartID:
+                _hasTimeHeadBlink = true;
+                break;
+
+            case MotionHatPartID:
+                _hasMotionHeadWideAttack = true;
+                break;
+        }
+    }
+
+    private float GetCurrentVirusPoisonCircleRadius()
+    {
+        int extraHeadCount = Mathf.Max(0, _equippedVirusHeadCount - 1);
+        float diameter = virusPoisonCircleBaseDiameter + extraHeadCount * virusPoisonCircleDiameterPerExtraHead;
+        return Mathf.Max(0f, diameter * 0.5f);
+    }
+
+    private float GetCurrentAttackRange()
+    {
+        return Mathf.Max(0f, attackRange * GetCurrentAttackRangeMultiplier());
+    }
+
+    private Vector3 GetCurrentAttackBoxHalfExtents()
+    {
+        return new Vector3(
+            GetCurrentAttackRange() * 0.5f,
+            Mathf.Max(0.01f, attackBoxHeight * 0.5f),
+            GetCurrentAttackHalfDepth() * 0.5f
+        );
+    }
+
+    private Vector3 GetAttackBoxCenter(Vector3 attackerForward)
+    {
+        Vector3 forward = GetFlattenedAttackForward(attackerForward);
+        return transform.position + forward * (GetCurrentAttackHalfDepth() * 0.5f) + Vector3.up * (attackBoxHeight * 0.5f);
+    }
+
+    private Quaternion GetAttackBoxRotation(Vector3 attackerForward)
+    {
+        return Quaternion.LookRotation(GetFlattenedAttackForward(attackerForward), Vector3.up);
+    }
+
+    private Vector3 GetMotionAttackEffectPosition(Vector3 attackerForward)
+    {
+        return GetAttackBoxCenter(attackerForward) + motionAttackEffectPositionOffset;
+    }
+
+    private Vector3 GetMotionAttackFanOrigin(Vector3 attackerForward)
+    {
+        Vector3 forward = GetFlattenedAttackForward(attackerForward);
+        return transform.position + forward * Mathf.Max(0f, motionAttackFanForwardOffset) + Vector3.up * (motionAttackFanHeight * 0.5f);
+    }
+
+    private bool IsInsideMotionAttackFan(Collider hit, Vector3 attackerForward, Vector3 origin)
+    {
+        if (hit == null || hit.transform.IsChildOf(transform))
+            return false;
+
+        Vector3 closestPoint = hit.ClosestPoint(origin);
+        Vector3 toTarget = closestPoint - origin;
+        float halfHeight = Mathf.Max(0.01f, motionAttackFanHeight * 0.5f);
+
+        if (Mathf.Abs(toTarget.y) > halfHeight)
+            return false;
+
+        toTarget.y = 0f;
+        if (toTarget.sqrMagnitude <= Mathf.Epsilon)
+            return true;
+
+        Vector3 forward = GetFlattenedAttackForward(attackerForward);
+        float angle = Vector3.Angle(forward, toTarget.normalized);
+        return angle <= motionAttackFanAngle * 0.5f;
+    }
+
+    private Quaternion GetMotionAttackEffectRotation(Vector3 attackerForward)
+    {
+        return GetAttackBoxRotation(attackerForward) * Quaternion.Euler(motionAttackEffectEulerOffset);
+    }
+
+    private Vector3 GetFlattenedAttackForward(Vector3 attackerForward)
+    {
+        Vector3 forward = attackerForward;
+        forward.y = 0f;
+
+        if (forward.sqrMagnitude <= Mathf.Epsilon)
+            forward = transform.forward;
+
+        forward.y = 0f;
+        return forward.sqrMagnitude > Mathf.Epsilon ? forward.normalized : Vector3.forward;
+    }
+
+    private float GetCurrentAttackHalfDepth()
+    {
+        return Mathf.Max(0f, attackRadius * GetCurrentAttackRangeMultiplier());
+    }
+
+    private float GetCurrentAttackRangeMultiplier()
+    {
+        float multiplier = _equippedAttackRangeMultiplier;
+
+        if (_hasMotionHeadWideAttack)
+            multiplier = Mathf.Max(multiplier, motionAttackRangeMultiplier);
+
+        return multiplier;
+    }
+
+    private void UpdateAttackRangeDebugVisualizer()
+    {
+        if (!_showAttackRangeDebug)
+        {
+            if (_attackRangeDebugRenderer != null)
+                _attackRangeDebugRenderer.enabled = false;
+
+            return;
+        }
+
+        EnsureAttackRangeDebugRenderer();
+
+        if (_attackRangeDebugRenderer == null)
+            return;
+
+        _attackRangeDebugRenderer.enabled = true;
+        _attackRangeDebugRenderer.startColor = _attackRangeDebugColor;
+        _attackRangeDebugRenderer.endColor = _attackRangeDebugColor;
+        _attackRangeDebugRenderer.startWidth = attackRangeDebugLineWidth;
+        _attackRangeDebugRenderer.endWidth = attackRangeDebugLineWidth;
+
+        if (_hasMotionHeadWideAttack)
+        {
+            UpdateMotionAttackFanDebugVisualizer();
+            return;
+        }
+
+        _attackRangeDebugRenderer.positionCount = 5;
+
+        Vector3 forward = GetFlattenedAttackForward(transform.forward);
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+        float depth = GetCurrentAttackHalfDepth();
+        float halfWidth = GetCurrentAttackRange() * 0.5f;
+        Vector3 origin = transform.position + Vector3.up * attackRangeDebugHeightOffset;
+        Vector3 frontCenter = origin + forward * depth;
+
+        _attackRangeDebugRenderer.SetPosition(0, origin - right * halfWidth);
+        _attackRangeDebugRenderer.SetPosition(1, origin + right * halfWidth);
+        _attackRangeDebugRenderer.SetPosition(2, frontCenter + right * halfWidth);
+        _attackRangeDebugRenderer.SetPosition(3, frontCenter - right * halfWidth);
+        _attackRangeDebugRenderer.SetPosition(4, origin - right * halfWidth);
+    }
+
+    private void UpdateMotionAttackFanDebugVisualizer()
+    {
+        int positionCount = MotionAttackFanDebugSegments + 3;
+        _attackRangeDebugRenderer.positionCount = positionCount;
+
+        Vector3 origin = transform.position + Vector3.up * attackRangeDebugHeightOffset;
+        Vector3 forward = GetFlattenedAttackForward(transform.forward);
+        Quaternion leftRotation = Quaternion.AngleAxis(-motionAttackFanAngle * 0.5f, Vector3.up);
+        float radius = Mathf.Max(0f, motionAttackFanRadius);
+
+        _attackRangeDebugRenderer.SetPosition(0, origin);
+
+        for (int i = 0; i <= MotionAttackFanDebugSegments; i++)
+        {
+            float t = i / (float)MotionAttackFanDebugSegments;
+            float angle = motionAttackFanAngle * t;
+            Vector3 arcDirection = Quaternion.AngleAxis(angle, Vector3.up) * (leftRotation * forward);
+            _attackRangeDebugRenderer.SetPosition(i + 1, origin + arcDirection * radius);
+        }
+
+        _attackRangeDebugRenderer.SetPosition(positionCount - 1, origin);
+    }
+
+    private void EnsureAttackRangeDebugRenderer()
+    {
+        if (_attackRangeDebugRenderer != null)
+            return;
+
+        GameObject debugObject = new GameObject("Attack Range Debug");
+        debugObject.transform.SetParent(transform, false);
+        _attackRangeDebugRenderer = debugObject.AddComponent<LineRenderer>();
+        _attackRangeDebugRenderer.loop = false;
+        _attackRangeDebugRenderer.useWorldSpace = true;
+        _attackRangeDebugRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        _attackRangeDebugRenderer.receiveShadows = false;
+        _attackRangeDebugRenderer.material = CreateAttackRangeDebugMaterial();
+    }
+
+    private Material CreateAttackRangeDebugMaterial()
+    {
+        Shader shader = Shader.Find("Sprites/Default");
+
+        if (shader == null)
+            shader = Shader.Find("Unlit/Color");
+
+        return shader != null ? new Material(shader) : null;
     }
 
     [Command]
@@ -1318,19 +2123,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
         {
             if (_isCharging)
             {
-                if (_audioSource != null)
-                {
-                    _audioSource.loop = false;
-                    _audioSource.Stop();
-                }
-                _isCharging = false;
-                _chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / maxChargeTime);
-                _dashDirection = _moveDirection != Vector3.zero
-                    ? _moveDirection.normalized
-                    : transform.forward;
-                _dashTimer = dashDuration;
-                _attackFired = false;
-                ChangeState(PlayerPose.Attack);
+                ReleaseChargedAttack();
             }
         }
     }
@@ -1367,14 +2160,15 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
             if (_currentPose == PlayerPose.Attack && !_attackFired)
             {
-                _attackFired = true;
-                impulseSource?.GenerateImpulse(cameraShakeStrength);
-                StartCoroutine(HitStop(hitStopDuration));
-
-                if (NetworkClient.active && NetworkClient.ready)
-                    CmdDoAttack(transform.forward);
+                TriggerLocalAttack();
             }
 
+            return;
+        }
+
+        if (_currentPose == PlayerPose.Attack && _hasMotionHeadWideAttack)
+        {
+            currentVelocity = Vector3.up * _verticalVelocity;
             return;
         }
 
@@ -1393,7 +2187,7 @@ public class PlayCol : NetworkBehaviour, ICharacterController, IGameplayInputMod
 
         if (_jumpRequested)
         {
-            _verticalVelocity = jumpForce;
+            _verticalVelocity = jumpForce * _equippedJumpForceMultiplier;
             _jumpRequested = false;
             _motor.ForceUnground();
         }

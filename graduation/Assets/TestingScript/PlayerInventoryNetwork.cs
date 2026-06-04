@@ -20,6 +20,15 @@ public class PlayerInventoryNetwork : NetworkBehaviour
 
     #endregion
 
+    #region Properties
+
+    /// <summary>
+    /// Provides the assigned database reference for gameplay systems that need part data lookup.
+    /// </summary>
+    public GameDatabase AssignedGameDatabase => cheatGameDatabase;
+
+    #endregion
+
     #region Events
 
     public event Action OnInventoryChanged;
@@ -37,6 +46,7 @@ public class PlayerInventoryNetwork : NetworkBehaviour
     private string cheatMoveSpeedText = "5";
     private string cheatAttackSpeedText = "1";
     private Vector2 cheatScrollPosition;
+    private Color cheatAttackRangeDebugColor = Color.red;
     private PlayerFastNetworkController cachedPlayerController;
     private PlayCol cachedPlayCol;
     private bool cheatDisabledGameplayInput;
@@ -70,13 +80,15 @@ public class PlayerInventoryNetwork : NetworkBehaviour
             return;
         }
 
-        GUILayout.BeginArea(new Rect(20f, 20f, 360f, 520f), GUI.skin.box);
+        GUILayout.BeginArea(new Rect(20f, 20f, 360f, 620f), GUI.skin.box);
         GUILayout.Label("Cheat UI (Ctrl+X)");
         cheatScrollPosition = GUILayout.BeginScrollView(cheatScrollPosition);
 
         DrawPartCheatUI();
         GUILayout.Space(12f);
         DrawStatCheatUI();
+        GUILayout.Space(12f);
+        DrawAttackRangeDebugUI();
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
@@ -507,6 +519,68 @@ public class PlayerInventoryNetwork : NetworkBehaviour
         }
 
         GUILayout.EndHorizontal();
+    }
+
+    private void DrawAttackRangeDebugUI()
+    {
+        GUILayout.Label("Attack Range Debug");
+
+        PlayCol playCol = GetPlayCol();
+
+        if (playCol == null)
+        {
+            GUILayout.Label("PlayCol is missing.");
+            return;
+        }
+
+        GUILayout.Label(playCol.IsAttackRangeDebugVisible() ? "Visible" : "Hidden");
+
+        GUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("Show"))
+        {
+            playCol.SetAttackRangeDebugVisible(true, cheatAttackRangeDebugColor);
+        }
+
+        if (GUILayout.Button("Hide"))
+        {
+            playCol.SetAttackRangeDebugVisible(false, cheatAttackRangeDebugColor);
+        }
+
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("Red"))
+        {
+            SetAttackRangeDebugColor(playCol, Color.red);
+        }
+
+        if (GUILayout.Button("Green"))
+        {
+            SetAttackRangeDebugColor(playCol, Color.green);
+        }
+
+        if (GUILayout.Button("Blue"))
+        {
+            SetAttackRangeDebugColor(playCol, Color.cyan);
+        }
+
+        if (GUILayout.Button("Yellow"))
+        {
+            SetAttackRangeDebugColor(playCol, Color.yellow);
+        }
+
+        GUILayout.EndHorizontal();
+    }
+
+    private void SetAttackRangeDebugColor(PlayCol playCol, Color color)
+    {
+        cheatAttackRangeDebugColor = color;
+
+        if (playCol != null && playCol.IsAttackRangeDebugVisible())
+        {
+            playCol.SetAttackRangeDebugVisible(true, cheatAttackRangeDebugColor);
+        }
     }
 
     private static string DrawTextField(string label, string value)

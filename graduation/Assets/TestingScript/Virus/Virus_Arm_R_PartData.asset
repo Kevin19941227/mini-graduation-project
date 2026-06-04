@@ -24,6 +24,9 @@ MonoBehaviour:
   attackSpeedBonus: 0
   passiveBuffs:
   - {fileID: 11400001, guid: de2d99853dd53c441bd8383f01b8d468, type: 2}
+  specialEffect: 0
+  jumpHeightMultiplier: 1
+  attackRangeMultiplier: 1.03
   icon: {fileID: 21300000, guid: 43d64c6da02a75d4484f2cc3561e4180, type: 3}
   partPrefab: {fileID: 6251391776136720639, guid: 6c60a0dfff30c1b48bc438afa2014a69,
     type: 3}

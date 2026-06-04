@@ -15,22 +15,22 @@ MonoBehaviour:
   dropTableID: 300
   dropEntries:
   - partID: 301
-    dropRate: 0.35
+    dropRate: 0.257
     minCount: 1
     maxCount: 1
   - partID: 302
-    dropRate: 0.3
+    dropRate: 0.15
     minCount: 1
     maxCount: 1
   - partID: 303
-    dropRate: 0.45
+    dropRate: 0.275
     minCount: 1
-    maxCount: 1
+    maxCount: 2
   - partID: 304
-    dropRate: 0.2
+    dropRate: 0
     minCount: 1
     maxCount: 1
   - partID: 305
-    dropRate: 0.5
+    dropRate: 0.353
     minCount: 1
-    maxCount: 1
+    maxCount: 2

@@ -1,9 +1,34 @@
 using System;
 using Mirror;
 using UnityEngine;
+using UnityEngine.Events;
+
+[Serializable]
+public class PlayerSpecialEffectEvent : UnityEvent<PlayerFastNetworkController>
+{
+}
+
+[Serializable]
+public class PositionSpecialEffectEvent : UnityEvent<Vector3>
+{
+}
+
+[Serializable]
+public class DurationSpecialEffectEvent : UnityEvent<float>
+{
+}
 
 public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeReceiver
 {
+    #region Part Effect IDs
+
+    private const int VirusHeadPartID = 101;
+    private const int TimeHeadPartID = 201;
+    private const int MotionHatPartID = 304;
+    private const float TwoGravity = 2f;
+
+    #endregion
+
     #region Animator IDs
 
     private static class AnimatorID
@@ -22,6 +47,7 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
 
     [Header("Data")]
     [SerializeField] private PlayerBaseData baseData;
+    [SerializeField] private GameDatabase gameDatabase;
 
     [Header("Movement")]
     [SerializeField] private CharacterController characterController;
@@ -36,6 +62,10 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     [SerializeField] private float attackCooldown = 0.5f;
     [SerializeField] private int fallbackAttackDamage = 10;
 
+    [Header("Jump")]
+    [SerializeField] private KeyCode jumpKey = KeyCode.None;
+    [SerializeField] private float jumpHeight = 1.5f;
+
     [Header("Roll")]
     [SerializeField] private float rollDistance = 4f;
     [SerializeField] private float rollDuration = 0.25f;
@@ -46,8 +76,23 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
 
     [Header("Input")]
     [SerializeField] private KeyCode assemblyKey = KeyCode.B;
+    [SerializeField] private KeyCode timeBlinkKey = KeyCode.LeftShift;
     [SerializeField] private KeyCode rollKey = KeyCode.Space;
     [SerializeField] private int attackMouseButton = 0;
+
+    [Header("Special Effects")]
+    [SerializeField] private float timeBlinkHalfExtent = 5f;
+    [SerializeField] private float timeBlinkCooldown = 3f;
+    [SerializeField] private float virusPoisonTrailRadius = 1.25f;
+    [SerializeField] private float virusPoisonTrailTickInterval = 0.5f;
+    [SerializeField] private float virusPoisonDuration = 3f;
+    [SerializeField] private int virusPoisonDamage = 1;
+    [SerializeField] private float motionAttackRangeMultiplier = 3f;
+    [SerializeField] private float motionBlackoutDuration = 2f;
+    [SerializeField] private PlayerSpecialEffectEvent virusTrailEffectRequested;
+    [SerializeField] private PositionSpecialEffectEvent timeBlinkEffectRequested;
+    [SerializeField] private PlayerSpecialEffectEvent motionAttackEffectRequested;
+    [SerializeField] private DurationSpecialEffectEvent blackoutRequested;
 
     [Header("Local UI")]
     [SerializeField] private BackpackUIController backpackUIController;
@@ -98,6 +143,12 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     private float nextLocalRollTime;
     private float nextServerAttackTime;
     private float nextServerRollTime;
+    private float nextLocalTimeBlinkTime;
+    private float nextServerTimeBlinkTime;
+    private float nextServerVirusTrailTickTime;
+    private float poisonEndTime;
+    private float nextPoisonDamageTime;
+    private float localBlackoutEndTime;
     private float invincibleEndTime;
     private float serverRollEndTime;
     private Vector3 rollDirection;
@@ -105,6 +156,13 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     private bool localAssemblyOpen;
     private bool gameplayInputEnabled = true;
     private Camera cachedMainCamera;
+    private PlayerInventoryNetwork inventory;
+    private float equippedJumpHeightMultiplier = 1f;
+    private float equippedAttackRangeMultiplier = 1f;
+    private bool hasVirusHeadPoisonTrail;
+    private bool hasTimeHeadBlink;
+    private bool hasMotionHeadWideAttack;
+    private bool isSubscribedToInventory;
 
     #endregion
 
@@ -131,16 +189,24 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
 
     #region Unity Lifecycle
 
+    private void Awake()
+    {
+        CacheReferences();
+    }
+
     private void Reset()
     {
         characterController = GetComponent<CharacterController>();
         animator = GetComponentInChildren<Animator>();
         controlModeController = GetComponent<PlayerControlModeController>();
+        inventory = GetComponent<PlayerInventoryNetwork>();
     }
 
     private void Start()
     {
         cachedMainCamera = Camera.main;
+        CacheReferences();
+        RecalculateEquippedSpecialEffects();
 
         if (!isLocalPlayer)
         {
@@ -161,6 +227,12 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
             isRolling = false;
         }
 
+        if (isServer)
+        {
+            ServerUpdatePoisonState();
+            ServerUpdateVirusPoisonTrail();
+        }
+
         if (!isLocalPlayer || isDead)
         {
             return;
@@ -169,6 +241,16 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
         HandleLocalInput();
         HandleLocalMovement();
         UpdateAnimatorMoveSpeed();
+    }
+
+    private void OnGUI()
+    {
+        if (!isLocalPlayer || Time.time >= localBlackoutEndTime)
+        {
+            return;
+        }
+
+        GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.blackTexture);
     }
 
     #endregion
@@ -183,6 +265,8 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
         isDead = false;
         isRolling = false;
         isAssemblyMode = false;
+        SubscribeInventory();
+        RecalculateEquippedSpecialEffects();
     }
 
     public override void OnStartClient()
@@ -193,6 +277,20 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
         OnDeadChanged(isDead, isDead);
         OnRollingChanged(isRolling, isRolling);
         OnAssemblyModeChanged(isAssemblyMode, isAssemblyMode);
+        SubscribeInventory();
+        RecalculateEquippedSpecialEffects();
+    }
+
+    public override void OnStopServer()
+    {
+        UnsubscribeInventory();
+        base.OnStopServer();
+    }
+
+    public override void OnStopClient()
+    {
+        UnsubscribeInventory();
+        base.OnStopClient();
     }
 
     #endregion
@@ -334,6 +432,16 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
             TryRequestAttack();
         }
 
+        if (Input.GetKeyDown(timeBlinkKey))
+        {
+            TryRequestTimeBlink();
+        }
+
+        if (jumpKey != KeyCode.None && Input.GetKeyDown(jumpKey))
+        {
+            TryJump();
+        }
+
         if (Input.GetKeyDown(rollKey))
         {
             TryRequestRoll();
@@ -367,6 +475,27 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
         nextLocalAttackTime = Time.time + GetAttackCooldown();
         PlayAttackAnimation();
         CmdRequestAttack();
+    }
+
+    private void TryRequestTimeBlink()
+    {
+        if (!hasTimeHeadBlink || Time.time < nextLocalTimeBlinkTime)
+        {
+            return;
+        }
+
+        nextLocalTimeBlinkTime = Time.time + timeBlinkCooldown;
+        CmdRequestTimeBlink();
+    }
+
+    private void TryJump()
+    {
+        if (characterController == null || !characterController.isGrounded)
+        {
+            return;
+        }
+
+        verticalVelocity = Mathf.Sqrt(Mathf.Max(0f, jumpHeight * equippedJumpHeightMultiplier) * -TwoGravity * gravity);
     }
 
     private void TryRequestRoll()
@@ -510,6 +639,20 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     }
 
     [Command]
+    private void CmdRequestTimeBlink()
+    {
+        if (isDead || isAssemblyMode || !hasTimeHeadBlink || Time.time < nextServerTimeBlinkTime)
+        {
+            return;
+        }
+
+        nextServerTimeBlinkTime = Time.time + timeBlinkCooldown;
+        Vector3 destination = ResolveTimeBlinkDestination();
+        ServerTeleportTo(destination);
+        RpcPlayTimeBlinkEffect(destination);
+    }
+
+    [Command]
     private void CmdSetAssemblyMode(bool value)
     {
         if (isDead)
@@ -534,7 +677,8 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     private void ServerExecuteAttack()
     {
         Transform origin = attackOrigin != null ? attackOrigin : transform;
-        Collider[] hits = Physics.OverlapSphere(origin.position, attackRadius, attackMask, QueryTriggerInteraction.Ignore);
+        Collider[] hits = Physics.OverlapSphere(origin.position, GetAttackRadius(), attackMask, QueryTriggerInteraction.Ignore);
+        bool hitAnyTarget = false;
 
         for (int i = 0; i < hits.Length; i++)
         {
@@ -546,7 +690,89 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
             }
 
             target.ServerTakeDamage(GetAttackDamage());
+            hitAnyTarget = true;
+
+            if (hasMotionHeadWideAttack && target.connectionToClient != null)
+            {
+                target.TargetRequestBlackout(target.connectionToClient, motionBlackoutDuration);
+            }
         }
+
+        if (hasMotionHeadWideAttack && hitAnyTarget)
+        {
+            RpcPlayMotionAttackEffect();
+        }
+    }
+
+    [Server]
+    private void ServerUpdatePoisonState()
+    {
+        if (Time.time >= poisonEndTime || Time.time < nextPoisonDamageTime)
+        {
+            return;
+        }
+
+        nextPoisonDamageTime = Time.time + virusPoisonTrailTickInterval;
+        ServerTakeDamage(virusPoisonDamage);
+    }
+
+    [Server]
+    private void ServerUpdateVirusPoisonTrail()
+    {
+        if (isDead || !hasVirusHeadPoisonTrail || Time.time < nextServerVirusTrailTickTime)
+        {
+            return;
+        }
+
+        nextServerVirusTrailTickTime = Time.time + virusPoisonTrailTickInterval;
+        RpcPlayVirusTrailEffect();
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, virusPoisonTrailRadius, attackMask, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            PlayerFastNetworkController target = hits[i].GetComponentInParent<PlayerFastNetworkController>();
+
+            if (target == null || target == this)
+            {
+                continue;
+            }
+
+            target.ServerApplyPoison(virusPoisonDuration);
+        }
+    }
+
+    [Server]
+    private void ServerApplyPoison(float duration)
+    {
+        poisonEndTime = Mathf.Max(poisonEndTime, Time.time + Mathf.Max(0f, duration));
+
+        if (nextPoisonDamageTime < Time.time)
+        {
+            nextPoisonDamageTime = Time.time;
+        }
+    }
+
+    [Server]
+    private Vector3 ResolveTimeBlinkDestination()
+    {
+        float xOffset = UnityEngine.Random.Range(-timeBlinkHalfExtent, timeBlinkHalfExtent);
+        float zOffset = UnityEngine.Random.Range(-timeBlinkHalfExtent, timeBlinkHalfExtent);
+        return transform.position + new Vector3(xOffset, 0f, zOffset);
+    }
+
+    [Server]
+    private void ServerTeleportTo(Vector3 destination)
+    {
+        if (characterController != null)
+        {
+            characterController.enabled = false;
+            transform.position = destination;
+            characterController.enabled = true;
+            return;
+        }
+
+        transform.position = destination;
     }
 
     #endregion
@@ -577,6 +803,31 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
         {
             animator.SetTrigger(AnimatorID.HurtID);
         }
+    }
+
+    [ClientRpc]
+    private void RpcPlayVirusTrailEffect()
+    {
+        virusTrailEffectRequested?.Invoke(this);
+    }
+
+    [ClientRpc]
+    private void RpcPlayTimeBlinkEffect(Vector3 destination)
+    {
+        timeBlinkEffectRequested?.Invoke(destination);
+    }
+
+    [ClientRpc]
+    private void RpcPlayMotionAttackEffect()
+    {
+        motionAttackEffectRequested?.Invoke(this);
+    }
+
+    [TargetRpc]
+    private void TargetRequestBlackout(NetworkConnectionToClient targetConnection, float duration)
+    {
+        localBlackoutEndTime = Time.time + Mathf.Max(0f, duration);
+        blackoutRequested?.Invoke(duration);
     }
 
     #endregion
@@ -680,6 +931,122 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
 
     #endregion
 
+    #region Equipment Special Effects
+
+    private void CacheReferences()
+    {
+        if (characterController == null)
+        {
+            characterController = GetComponent<CharacterController>();
+        }
+
+        if (inventory == null)
+        {
+            inventory = GetComponent<PlayerInventoryNetwork>();
+        }
+
+        if (gameDatabase == null && inventory != null)
+        {
+            gameDatabase = inventory.AssignedGameDatabase;
+        }
+    }
+
+    private void SubscribeInventory()
+    {
+        CacheReferences();
+
+        if (inventory == null || isSubscribedToInventory)
+        {
+            return;
+        }
+
+        inventory.OnInventoryChanged += RecalculateEquippedSpecialEffects;
+        isSubscribedToInventory = true;
+    }
+
+    private void UnsubscribeInventory()
+    {
+        if (inventory == null || !isSubscribedToInventory)
+        {
+            return;
+        }
+
+        inventory.OnInventoryChanged -= RecalculateEquippedSpecialEffects;
+        isSubscribedToInventory = false;
+    }
+
+    /// <summary>
+    /// Rebuilds special runtime effects from equipped monster parts.
+    /// </summary>
+    public void RecalculateEquippedSpecialEffects()
+    {
+        equippedJumpHeightMultiplier = 1f;
+        equippedAttackRangeMultiplier = 1f;
+        hasVirusHeadPoisonTrail = false;
+        hasTimeHeadBlink = false;
+        hasMotionHeadWideAttack = false;
+
+        if (inventory != null)
+        {
+            for (int i = 0; i < inventory.EquippedParts.Count; i++)
+            {
+                ApplyEquippedPartSpecialEffect(inventory.EquippedParts[i].partID);
+            }
+        }
+    }
+
+    private void ApplyEquippedPartSpecialEffect(int partID)
+    {
+        PartData partData = gameDatabase != null ? gameDatabase.GetPartData(partID) : null;
+
+        if (partData != null)
+        {
+            equippedJumpHeightMultiplier *= Mathf.Max(0.01f, partData.jumpHeightMultiplier);
+            equippedAttackRangeMultiplier *= Mathf.Max(0.01f, partData.attackRangeMultiplier);
+            ApplySpecialEffectType(partData.specialEffect);
+        }
+
+        ApplyKnownMonsterHeadFallback(partID);
+    }
+
+    private void ApplySpecialEffectType(PartSpecialEffect specialEffect)
+    {
+        switch (specialEffect)
+        {
+            case PartSpecialEffect.VirusHeadPoisonTrail:
+                hasVirusHeadPoisonTrail = true;
+                break;
+
+            case PartSpecialEffect.TimeHeadBlink:
+                hasTimeHeadBlink = true;
+                break;
+
+            case PartSpecialEffect.MotionHeadWideAttack:
+                hasMotionHeadWideAttack = true;
+                break;
+        }
+    }
+
+    private void ApplyKnownMonsterHeadFallback(int partID)
+    {
+        switch (partID)
+        {
+            case VirusHeadPartID:
+                hasVirusHeadPoisonTrail = true;
+                break;
+
+            case TimeHeadPartID:
+                hasTimeHeadBlink = true;
+                break;
+
+            case MotionHatPartID:
+                hasMotionHeadWideAttack = true;
+                break;
+        }
+    }
+
+    #endregion
+
     #region Helpers
 
     private void DisableRemotePlayerLocalControl()
@@ -751,6 +1118,18 @@ public class PlayerFastNetworkController : NetworkBehaviour, IGameplayInputModeR
     private float GetAttackCooldown()
     {
         return attackCooldown / GetAttackSpeed();
+    }
+
+    private float GetAttackRadius()
+    {
+        float rangeMultiplier = equippedAttackRangeMultiplier;
+
+        if (hasMotionHeadWideAttack)
+        {
+            rangeMultiplier = Mathf.Max(rangeMultiplier, motionAttackRangeMultiplier);
+        }
+
+        return Mathf.Max(0f, attackRadius * rangeMultiplier);
     }
 
     private float GetAttackSpeed()
